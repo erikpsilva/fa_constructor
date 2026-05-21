@@ -1,0 +1,9 @@
+Options -Indexes
+RewriteEngine On
+
+# Bloquear acesso direto à pasta config
+RewriteRule ^config/ - [F,L]
+
+# Redirecionar URLs amigaveis para index.php
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule ^(.*)$ index.php?url=$1 [QSA,L]
