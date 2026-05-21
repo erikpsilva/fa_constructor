@@ -5,8 +5,12 @@
             <li class="sidebar__item">
                 <a href="<?= BASE_URL ?>/admin/inicio"
                    class="sidebar__link <?= ($subRoute === 'inicio') ? 'sidebar__link--active' : '' ?>">
-                    Início
+                    In&iacute;cio
                 </a>
+            </li>
+
+            <li class="sidebar__section">
+                Dados e usu&aacute;rios
             </li>
 
             <li class="sidebar__item">
@@ -20,7 +24,24 @@
             <li class="sidebar__item">
                 <a href="<?= BASE_URL ?>/admin/cadastrarusuario"
                    class="sidebar__link <?= ($subRoute === 'cadastrarusuario') ? 'sidebar__link--active' : '' ?>">
-                    Cadastrar Usuário
+                    Cadastrar Usu&aacute;rio
+                </a>
+            </li>
+            <li class="sidebar__item">
+                <a href="<?= BASE_URL ?>/admin/gerenciarusuarios"
+                   class="sidebar__link <?= ($subRoute === 'gerenciarusuarios') ? 'sidebar__link--active' : '' ?>">
+                    Gerenciar Usu&aacute;rios
+                </a>
+            </li>
+
+            <li class="sidebar__section">
+                Criador de site
+            </li>
+
+            <li class="sidebar__item">
+                <a href="<?= BASE_URL ?>/admin/paginas"
+                   class="sidebar__link <?= ($subRoute === 'paginas') ? 'sidebar__link--active' : '' ?>">
+                    P&aacute;ginas
                 </a>
             </li>
             <?php endif; ?>

@@ -1,0 +1,177 @@
+// ── Variantes de botão adicionais ────────────────────────────
+.btn {
+    &--sm {
+        font-size: 13px;
+        padding: 8px 14px;
+    }
+    &--secondary {
+        border: 1px solid @btnGray;
+        background: @white;
+        color: @btnGray;
+        &:hover {
+            background: @btnGray;
+            color: @white;
+        }
+    }
+    &--danger {
+        border: 1px solid @white;
+        background: @error;
+        color: @white;
+        &:hover {
+            border: 1px solid @error;
+            background: @white;
+            color: @error;
+        }
+    }
+}
+
+// ── Botão desativado ──────────────────────────────────────────
+.btn[disabled] {
+    cursor: not-allowed;
+    opacity: 0.4;
+}
+
+// ── Tabela admin ──────────────────────────────────────────────
+.adminTable {
+    width: 100%;
+    border-collapse: collapse;
+    background: @white;
+    .radius;
+    .shadow;
+    overflow: hidden;
+
+    th, td {
+        padding: 14px 18px;
+        text-align: left;
+        font-size: 14px;
+        border-bottom: 1px solid @borderColor;
+    }
+
+    th {
+        background: @bgBoxContent;
+        font-weight: @semiBold;
+        color: @colorFont;
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    tbody tr {
+        .transition(0.2s background);
+        &:last-child td { border-bottom: none; }
+        &:hover { background: lighten(@secundary, 18%); }
+    }
+
+    &__actions {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    @media @tabletSM {
+        display: block;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+}
+
+// ── Badge nível de acesso ─────────────────────────────────────
+.badge {
+    border-radius: 20px;
+    display: inline-block;
+    font-size: 11px;
+    font-weight: @semiBold;
+    letter-spacing: 0.5px;
+    padding: 4px 10px;
+    text-transform: uppercase;
+
+    &--admin  { background: lighten(@primary, 55%);  color: darken(@primary, 5%); }
+    &--editor { background: lighten(@alert, 35%);    color: darken(@alert, 25%); }
+    &--leitor { background: lighten(@btnGray, 55%);  color: @btnGray; }
+}
+
+// ── Modal ─────────────────────────────────────────────────────
+.modal {
+    align-items: center;
+    background: rgba(0, 0, 0, 0.6);
+    bottom: 0;
+    display: none;
+    justify-content: center;
+    left: 0;
+    position: fixed;
+    right: 0;
+    top: 0;
+    z-index: 100;
+
+    &--open { display: flex; }
+
+    &__box {
+        background: @white;
+        .radius;
+        .shadow;
+        width: 100%;
+        max-width: 620px;
+        max-height: 90vh;
+        display: flex;
+        flex-direction: column;
+        margin: 20px;
+
+        &--sm { max-width: 420px; }
+    }
+
+    &__header {
+        align-items: center;
+        border-bottom: 1px solid @borderColor;
+        display: flex;
+        justify-content: space-between;
+        padding: 20px 25px;
+
+        h3 { margin: 0; font-weight: @semiBold; }
+    }
+
+    &__close {
+        background: none;
+        border: none;
+        color: @colorFont;
+        cursor: pointer;
+        font-size: 22px;
+        line-height: 1;
+        padding: 0 4px;
+        .transition;
+        &:hover { color: @error; }
+    }
+
+    &__body {
+        overflow-y: auto;
+        padding: 25px;
+
+        p { line-height: 1.6; }
+
+        .formGroup {
+            border: none;
+            background: none;
+            padding: 0;
+            box-shadow: none;
+
+            &__item {
+                input, select { margin-bottom: 22px; }
+            }
+        }
+    }
+
+    &__footer {
+        border-top: 1px solid @borderColor;
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+        padding: 18px 25px;
+    }
+}
+
+body.modal-open { overflow: hidden; }
+
+// ── Seção gerenciar usuários ──────────────────────────────────
+.gerenciarUsuarios {
+    h2 { margin-bottom: 25px; }
+}

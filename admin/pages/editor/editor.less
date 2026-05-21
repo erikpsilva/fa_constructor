@@ -1,0 +1,680 @@
+// ── Layout base ───────────────────────────────────────────────
+html, .editorBody { height: 100%; overflow: hidden; }
+
+.pageEditor {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+
+    // Top bar
+    &__topbar {
+        align-items: center;
+        background: @white;
+        border-bottom: 1px solid @borderColor;
+        display: flex;
+        flex-shrink: 0;
+        height: 55px;
+        justify-content: space-between;
+        padding: 0 20px;
+        .shadow;
+        z-index: 10;
+
+        &-left, &-right {
+            align-items: center;
+            display: flex;
+            gap: 12px;
+        }
+
+        &-title {
+            font-size: 15px;
+            font-weight: @semiBold;
+        }
+    }
+
+    // Body
+    &__body {
+        display: flex;
+        flex: 1;
+        overflow: hidden;
+    }
+
+    // Left panel (all tools)
+    &__panel {
+        background: @white;
+        border-right: 1px solid @borderColor;
+        display: flex;
+        flex-direction: column;
+        flex-shrink: 0;
+        overflow: hidden;
+        width: 300px;
+
+        #editorPanel {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            overflow: hidden;
+        }
+    }
+
+    // Center: clean preview
+    &__preview {
+        background: #d5d5d5;
+        flex: 1;
+        overflow-y: auto;
+        padding: 40px 30px;
+    }
+}
+
+// ── Panel body/footer layout ──────────────────────────────────
+.panelBody {
+    flex: 1;
+    overflow-y: auto;
+}
+
+.panelFooter {
+    border-top: 1px solid @borderColor;
+    flex-shrink: 0;
+    padding: 12px;
+}
+
+// ── Panel content ─────────────────────────────────────────────
+.panelSection {
+    padding: 16px;
+
+    h4 {
+        color: lighten(@colorFont, 10%);
+        font-size: 11px;
+        font-weight: @semiBold;
+        letter-spacing: 0.8px;
+        margin-bottom: 16px;
+        text-transform: uppercase;
+    }
+}
+
+.panelField {
+    margin-bottom: 16px;
+
+    label {
+        color: @colorFont;
+        display: block;
+        font-size: 13px;
+        margin-bottom: 6px;
+    }
+
+    .input {
+        border: 1px solid @borderColor;
+        font-family: @font;
+        font-size: 14px;
+        height: 40px;
+        padding: 8px 10px;
+        width: 100%;
+        .radius(6px);
+        &:focus-visible { border: 2px solid @primary; outline: none; }
+    }
+}
+
+.panelHint {
+    color: lighten(@colorFont, 22%);
+    font-size: 13px;
+    line-height: 1.6;
+    margin-bottom: 14px;
+}
+
+.panelActions {
+    display: flex;
+    gap: 8px;
+    margin-top: 4px;
+}
+
+.panelDivider {
+    border-top: 1px solid @borderColor;
+    margin: 14px 0;
+}
+
+// ── Structure tree ────────────────────────────────────────────
+.structureList {
+    padding: 10px;
+}
+
+.structureSection {
+    margin-bottom: 8px;
+
+    &__header {
+        align-items: center;
+        background: @bgBoxContent;
+        border: 1px solid @borderColor;
+        border-radius: 6px 6px 0 0;
+        cursor: default;
+        display: flex;
+        justify-content: space-between;
+        padding: 7px 10px;
+
+        > span {
+            color: @colorFont;
+            font-size: 12px;
+            font-weight: @semiBold;
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        &.active { background: lighten(@primary, 50%); border-color: @primary; }
+    }
+
+    &__gear {
+        background: none;
+        border: none;
+        color: lighten(@colorFont, 25%);
+        cursor: pointer;
+        flex-shrink: 0;
+        font-size: 13px;
+        line-height: 1;
+        padding: 0 0 0 8px;
+        &:hover { color: @primary; }
+    }
+
+    &__cols {
+        border: 1px solid @borderColor;
+        border-top: none;
+        border-radius: 0 0 6px 6px;
+        display: flex;
+        flex-direction: column;
+        gap: 1px;
+        overflow: hidden;
+        padding: 8px;
+        background: #f8f8f8;
+    }
+}
+
+// ── Column block ──────────────────────────────────────────────
+.structureCol {
+    background: @white;
+    border: 1px solid @borderColor;
+    border-radius: 6px;
+    overflow: hidden;
+
+    &__header {
+        align-items: center;
+        background: @bgBoxContent;
+        border-bottom: 1px solid @borderColor;
+        display: flex;
+        justify-content: space-between;
+        padding: 5px 10px;
+
+        span {
+            color: lighten(@colorFont, 20%);
+            font-size: 11px;
+            font-weight: @semiBold;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
+    }
+
+    &__gear {
+        background: none;
+        border: none;
+        color: lighten(@colorFont, 30%);
+        cursor: pointer;
+        flex-shrink: 0;
+        font-size: 12px;
+        line-height: 1;
+        padding: 0;
+        &:hover { color: @primary; }
+    }
+
+    &__elements {
+        padding: 6px 8px 2px;
+    }
+
+    &__add {
+        background: none;
+        border: none;
+        border-top: 1px dashed @borderColor;
+        color: @primary;
+        cursor: pointer;
+        display: block;
+        font-family: @font;
+        font-size: 12px;
+        font-weight: @semiBold;
+        padding: 7px 10px;
+        text-align: left;
+        width: 100%;
+        .transition(0.15s background);
+
+        &:hover { background: lighten(@primary, 52%); }
+    }
+}
+
+// ── Element row ───────────────────────────────────────────────
+.structureElement {
+    align-items: center;
+    border: 1px solid @borderColor;
+    cursor: pointer;
+    display: flex;
+    gap: 6px;
+    margin-bottom: 4px;
+    padding: 5px 8px;
+    .radius(4px);
+    .transition(0.15s all);
+
+    &:hover, &.active {
+        background: lighten(@primary, 50%);
+        border-color: @primary;
+    }
+
+    &__badge {
+        background: @primary;
+        border-radius: 3px;
+        color: @white;
+        flex-shrink: 0;
+        font-size: 9px;
+        font-weight: @semiBold;
+        letter-spacing: 0.3px;
+        padding: 2px 5px;
+        text-transform: uppercase;
+    }
+
+    &__label {
+        color: @colorFont;
+        flex: 1;
+        font-size: 12px;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    &__order {
+        align-items: center;
+        display: flex;
+        flex-shrink: 0;
+        gap: 2px;
+
+        button {
+            background: @white;
+            border: 1px solid @borderColor;
+            color: lighten(@colorFont, 20%);
+            cursor: pointer;
+            font-size: 11px;
+            height: 20px;
+            line-height: 1;
+            padding: 0 5px;
+            .radius(3px);
+            .transition(0.15s all);
+
+            &:hover:not([disabled]) { background: @primary; border-color: @primary; color: @white; }
+            &[disabled] { color: lighten(@colorFont, 45%); cursor: default; }
+        }
+    }
+}
+
+// ── Color row ─────────────────────────────────────────────────
+.colorRow {
+    align-items: center;
+    display: flex;
+    gap: 8px;
+
+    .colorInput {
+        border: 1px solid @borderColor;
+        border-radius: 4px;
+        cursor: pointer;
+        flex-shrink: 0;
+        height: 36px;
+        padding: 2px;
+        width: 56px;
+
+        &[disabled] { cursor: not-allowed; opacity: 0.4; }
+    }
+
+    .colorRowLabel {
+        color: @colorFont;
+        cursor: pointer;
+        font-size: 13px;
+        margin: 0;
+    }
+}
+
+// ── Two-column field grid ─────────────────────────────────────
+.twoColGrid {
+    display: flex;
+    gap: 8px;
+
+    .panelField {
+        flex: 1;
+        min-width: 0;
+    }
+}
+
+// ── Border row ────────────────────────────────────────────────
+.borderRow {
+    align-items: center;
+    display: flex;
+    gap: 8px;
+
+    .borderWidth {
+        text-align: center;
+        width: 60px !important;
+    }
+
+    .borderUnit {
+        color: lighten(@colorFont, 20%);
+        flex-shrink: 0;
+        font-size: 13px;
+    }
+
+    .colorInput { flex-shrink: 0; }
+}
+
+// ── Dimension row (width / height) ───────────────────────────
+.dimensionRow {
+    display: flex;
+    gap: 6px;
+
+    .input:first-child {
+        flex: 1;
+        text-align: center;
+    }
+
+    select.input {
+        flex-shrink: 0;
+        padding: 0 6px;
+        width: 56px;
+    }
+}
+
+// ── Spacing grid (padding / margin) ───────────────────────────
+.spacingGrid {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+
+    &__row {
+        display: flex;
+        gap: 5px;
+    }
+
+    &__field {
+        flex: 1;
+        min-width: 0;
+
+        label {
+            color: lighten(@colorFont, 28%);
+            display: block;
+            font-size: 10px;
+            font-weight: @semiBold;
+            margin-bottom: 3px;
+        }
+
+        .input {
+            font-size: 13px;
+            height: 32px;
+            padding: 4px 6px;
+            text-align: center;
+            width: 100%;
+        }
+    }
+}
+
+.shadowControls {
+    padding-bottom: 12px;
+}
+
+// ── Quill editor ──────────────────────────────────────────────
+.quillEditor {
+    border: 1px solid @borderColor !important;
+    font-family: @font;
+    .radius(6px);
+    overflow: hidden;
+
+    .ql-toolbar {
+        border: none !important;
+        border-bottom: 1px solid @borderColor !important;
+        font-family: @font;
+        padding: 6px 8px;
+    }
+
+    .ql-container {
+        border: none !important;
+        font-family: @font;
+        font-size: 14px;
+        min-height: 160px;
+    }
+
+    .ql-editor {
+        font-family: @font;
+        font-size: 14px;
+        line-height: 1.6;
+        min-height: 160px;
+        padding: 10px 12px;
+
+        &.ql-blank::before {
+            color: lighten(@colorFont, 35%);
+            font-style: italic;
+        }
+    }
+
+    .ql-toolbar button.ql-active,
+    .ql-toolbar button:hover {
+        color: @primary !important;
+        .ql-stroke { stroke: @primary !important; }
+        .ql-fill   { fill: @primary !important; }
+    }
+}
+
+// Bold in Quill = Montserrat SemiBold
+.ql-editor strong,
+.previewElement strong { font-weight: 600; }
+
+// ── Col picker ────────────────────────────────────────────────
+.colPicker {
+    display: flex;
+    gap: 5px;
+
+    &__btn {
+        align-items: center;
+        background: @bgBoxContent;
+        border: 2px solid @borderColor;
+        cursor: pointer;
+        display: flex;
+        flex: 1;
+        flex-direction: column;
+        font-family: @font;
+        font-size: 14px;
+        font-weight: @semiBold;
+        height: 42px;
+        justify-content: center;
+        line-height: 1;
+        min-width: 0;
+        padding: 0;
+        .radius(6px);
+        .transition(0.2s all);
+
+        small {
+            font-size: 9px;
+            font-weight: @regular;
+            line-height: 1;
+            margin-top: 2px;
+            opacity: 0.7;
+        }
+
+        &:hover  { border-color: @primary; color: @primary; }
+        &.active { background: @primary; border-color: @primary; color: @white;
+            small { opacity: 1; }
+        }
+    }
+}
+
+// ── Plugin list ───────────────────────────────────────────────
+.pluginList { display: flex; flex-direction: column; gap: 8px; }
+
+.pluginBtn {
+    align-items: center;
+    background: @bgBoxContent;
+    border: 2px solid @borderColor;
+    cursor: pointer;
+    display: flex;
+    font-family: @font;
+    gap: 12px;
+    padding: 12px;
+    text-align: left;
+    width: 100%;
+    .radius(8px);
+    .transition(0.2s all);
+
+    &:hover { background: lighten(@primary, 52%); border-color: @primary; }
+
+    &__icon {
+        align-items: center;
+        background: @primary;
+        color: @white;
+        display: flex;
+        flex-shrink: 0;
+        font-size: 14px;
+        font-weight: @bold;
+        height: 32px;
+        justify-content: center;
+        width: 32px;
+        .radius(6px);
+    }
+
+    &__label { color: @colorFont; font-size: 14px; font-weight: @semiBold; }
+}
+
+// ── Preview frame ─────────────────────────────────────────────
+.previewFrame {
+    background: @white;
+    box-shadow: 0 2px 20px rgba(0,0,0,0.12);
+    color: #555;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+    margin: 0 auto;
+    max-width: 1200px;
+    min-height: calc(100vh - 135px);
+    padding: 0;
+}
+
+// ── Canvas: empty state ───────────────────────────────────────
+.editorCanvas__empty {
+    color: lighten(@colorFont, 35%);
+    padding: 80px 20px;
+    text-align: center;
+
+    p { font-size: 15px; margin-bottom: 8px; }
+}
+
+// ── Layout picker ─────────────────────────────────────────────
+.layoutPicker {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.layoutBtn {
+    background: @bgBoxContent;
+    border: 2px solid @borderColor;
+    cursor: pointer;
+    display: block;
+    font-family: @font;
+    padding: 9px 12px;
+    text-align: left;
+    width: 100%;
+    .radius(6px);
+    .transition(0.15s all);
+
+    strong {
+        color: @colorFont;
+        display: block;
+        font-size: 13px;
+        font-weight: @semiBold;
+    }
+    span {
+        color: lighten(@colorFont, 28%);
+        display: block;
+        font-size: 11px;
+        margin-top: 2px;
+    }
+
+    &:hover { border-color: @primary; strong { color: @primary; } }
+    &.active {
+        background: lighten(@primary, 50%);
+        border-color: @primary;
+        strong { color: @primary; }
+    }
+}
+
+// ── Sections in preview ───────────────────────────────────────
+.editorSection {
+    margin-bottom: 0;
+    overflow: hidden;
+
+    &--full,
+    &--full-inner {
+        position: relative;
+
+        &::before {
+            color: rgba(0,0,0,0.2);
+            content: 'full width';
+            font-size: 10px;
+            font-style: italic;
+            pointer-events: none;
+            position: absolute;
+            right: 8px;
+            top: 4px;
+        }
+    }
+}
+
+// ── Columns in preview ────────────────────────────────────────
+.editorColumn {
+    cursor: pointer;
+    padding-top: 0;
+    padding-bottom: 0;
+    position: relative;
+
+    // Empty column: subtle dashed on hover only
+    &--empty {
+        &:hover { outline: 2px dashed lighten(@primary, 30%); outline-offset: -2px; .radius(6px); }
+    }
+}
+
+// ── Elements in preview ───────────────────────────────────────
+.editorElement {
+    box-shadow: inset 0 0 0 2px transparent;
+    cursor: pointer;
+    margin-bottom: 0;
+    .radius(4px);
+    .transition(0.15s box-shadow);
+
+    &:hover  { box-shadow: inset 0 0 0 2px @borderColor; }
+    &.active { box-shadow: inset 0 0 0 2px @borderColor; }
+
+    .previewElement {
+        padding: 0;
+
+        p   { font-size: 16px; line-height: 1.6; margin: 0; word-break: break-word; }
+        em  { color: lighten(@colorFont, 35%); font-style: italic; }
+        ul, ol { padding-left: 20px; }
+    }
+}
+
+.previewEmpty {
+    color: lighten(@colorFont, 38%);
+    font-style: italic;
+}
+
+// ── Save indicator ────────────────────────────────────────────
+#saveIndicator {
+    color: @primary;
+    font-size: 13px;
+    font-weight: @semiBold;
+    opacity: 0;
+    .transition(0.3s opacity);
+
+    &.show { opacity: 1; }
+}
+
+// ── Btn helpers ───────────────────────────────────────────────
+.btn--full { margin-bottom: 8px; width: 100%; }

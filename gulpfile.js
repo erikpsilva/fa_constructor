@@ -27,7 +27,7 @@ const compileLessAdmin = () =>
 // Inicia o BrowserSync como proxy do XAMPP
 const serve = (done) => {
     bs.init({
-        proxy: 'localhost/project_php_start',
+        proxy: 'localhost/fa_constructor',
         open: true,
         notify: false,
     });
@@ -62,8 +62,10 @@ const watch = () => {
     );
 };
 
+export const build = gulp.parallel(compileLessRoot, compileLessAdmin);
+
 export default gulp.series(
-    gulp.parallel(compileLessRoot, compileLessAdmin),
+    build,
     serve,
     watch
 );

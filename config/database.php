@@ -1,7 +1,7 @@
 <?php
 
 define('DB_HOST', 'localhost');
-define('DB_NAME', 'admin_project_db');
+define('DB_NAME', 'faconstructor_db');
 define('DB_USER', 'root');
 define('DB_PASS', '');
 

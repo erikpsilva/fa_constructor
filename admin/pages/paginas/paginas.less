@@ -1,0 +1,76 @@
+// ── Seção páginas ─────────────────────────────────────────────
+.adminPaginas {
+    h2 { margin-bottom: 25px; }
+
+    &__header-action {
+        display: flex;
+        align-items: flex-start;
+        justify-content: flex-end;
+
+        @media @tabletSM { justify-content: flex-start; margin-bottom: 15px; }
+    }
+
+    &__empty {
+        background: @bgBoxContent;
+        border: 1px dashed @borderColor;
+        .radius;
+        padding: 40px;
+        text-align: center;
+        color: lighten(@colorFont, 20%);
+    }
+}
+
+// ── Badge status publicação ───────────────────────────────────
+.badge {
+    &--status-published {
+        background: lighten(@primary, 52%);
+        color: darken(@primary, 5%);
+    }
+    &--status-draft {
+        background: lighten(@btnGray, 55%);
+        color: @btnGray;
+    }
+    &--home {
+        background: lighten(@alert, 30%);
+        color: darken(@alert, 30%);
+    }
+}
+
+// ── Slug em code ──────────────────────────────────────────────
+.adminTable code {
+    background: @bgBoxContent;
+    border: 1px solid @borderColor;
+    border-radius: 4px;
+    color: darken(@colorFont, 10%);
+    font-size: 13px;
+    padding: 2px 6px;
+}
+
+.adminTable__dash {
+    color: lighten(@colorFont, 30%);
+}
+
+// ── Checkbox personalizado ────────────────────────────────────
+.formGroup__item--check {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+
+    .checkLabel {
+        align-items: center;
+        cursor: pointer;
+        display: flex;
+        gap: 10px;
+        font-size: 15px;
+        margin: 0;
+
+        input[type="checkbox"] {
+            accent-color: @primary;
+            cursor: pointer;
+            height: 18px;
+            margin: 0;
+            width: 18px;
+            min-width: 18px;
+        }
+    }
+}
