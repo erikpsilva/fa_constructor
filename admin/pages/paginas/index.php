@@ -10,6 +10,7 @@ $paginas   = Database::fetchAll(
     "SELECT p.*, t.name AS template_name
      FROM pages p
      LEFT JOIN templates t ON p.template_id = t.id
+     WHERE p.type = 'page'
      ORDER BY p.is_home DESC, p.created_at DESC"
 );
 $templates = Database::fetchAll("SELECT id, name FROM templates ORDER BY name ASC");
@@ -75,6 +76,17 @@ $templates = Database::fetchAll("SELECT id, name FROM templates ORDER BY name AS
                                     <?php endif; ?>
                                 </td>
                                 <td class="adminTable__actions">
+                                    <?php if ($p['status'] === 'published'): ?>
+                                        <a href="<?= BASE_URL . '/' . htmlspecialchars($p['slug']) ?>"
+                                           target="_blank" rel="noopener"
+                                           class="btn btn--sm btn--secondary">
+                                            Ver página
+                                        </a>
+                                    <?php else: ?>
+                                        <span class="btn btn--sm btn--secondary btn--disabled" title="Publique a página para visualizar">
+                                            Ver página
+                                        </span>
+                                    <?php endif; ?>
                                     <a href="<?= BASE_URL ?>/admin/editor/<?= $p['id'] ?>"
                                        class="btn btn--sm btn--secondary">
                                         Editar página

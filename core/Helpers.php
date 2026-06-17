@@ -52,6 +52,11 @@ function jsonResponse(bool $success, string $message, array $data = []): void {
 function buildInlineStyles(array $st): string {
     $css = '';
     if (!empty($st['bg_color']))     $css .= 'background-color:' . $st['bg_color'] . ';';
+    if (!empty($st['bg_image'])) {
+        $css .= "background-image:url('" . $st['bg_image'] . "');";
+        $css .= 'background-repeat:' . ($st['bg_repeat'] ?? 'no-repeat') . ';';
+        $css .= 'background-position:' . ($st['bg_position_x'] ?? 'center') . ' ' . ($st['bg_position_y'] ?? 'center') . ';';
+    }
     if (!empty($st['width_value']))  $css .= 'width:'  . $st['width_value']  . ($st['width_unit']  ?? 'px') . ';';
     if (!empty($st['height_value'])) $css .= 'height:' . $st['height_value'] . ($st['height_unit'] ?? 'px') . ';';
 
@@ -88,4 +93,114 @@ function buildInlineStyles(array $st): string {
     }
 
     return $css;
+}
+
+// Instancia o plugin do elemento e devolve o HTML renderizado. Usado pelo render
+// público (renderSections) e por elementos que aninham outros, como o Grid.
+function renderPluginElement(array $element): string {
+    $pluginType = $element['plugin_type'] ?? '';
+    if ($pluginType === '') {
+        return '';
+    }
+
+    $pluginPath = ROOT . '/plugins/' . $pluginType . '/Plugin.php';
+    if (!file_exists($pluginPath)) {
+        return '';
+    }
+
+    require_once ROOT . '/plugins/PluginBase.php';
+    require_once $pluginPath;
+    $className = ucfirst($pluginType) . 'Plugin';
+    if (!class_exists($className)) {
+        return '';
+    }
+
+    return (new $className($element['content'] ?? []))->render();
+}
+
+// Busca a árvore completa (seções → colunas → elementos) de uma página, já com
+// styles/content decodificados. Usado pelo Router (conteúdo da página) e por
+// renderTemplateSection() (header/footer dinâmicos).
+function loadPageSectionsTree(int $pageId): array {
+    $sections = Database::fetchAll(
+        "SELECT * FROM page_sections WHERE page_id = ? ORDER BY sort_order ASC",
+        [$pageId]
+    );
+
+    foreach ($sections as &$section) {
+        $section['id']      = (int) $section['id'];
+        $section['styles']  = json_decode($section['styles'] ?? '{}', true) ?: [];
+        $section['columns'] = Database::fetchAll(
+            "SELECT * FROM section_columns WHERE section_id = ? ORDER BY sort_order ASC",
+            [$section['id']]
+        );
+        foreach ($section['columns'] as &$column) {
+            $column['id']       = (int) $column['id'];
+            $column['col_size'] = (int) $column['col_size'];
+            $column['styles']   = json_decode($column['styles'] ?? '{}', true) ?: [];
+            $column['elements'] = Database::fetchAll(
+                "SELECT * FROM column_elements WHERE column_id = ? ORDER BY sort_order ASC",
+                [$column['id']]
+            );
+            foreach ($column['elements'] as &$element) {
+                $element['content'] = json_decode($element['content'] ?? '{}', true) ?? [];
+            }
+            unset($element);
+        }
+        unset($column);
+    }
+    unset($section);
+
+    return $sections;
+}
+
+// Renderiza a lista de seções (vindas de loadPageSectionsTree) em HTML.
+// Usado tanto pelo conteúdo principal da página quanto pelo header/footer dinâmicos.
+function renderSections(array $sections): string {
+    $html = '';
+
+    foreach ($sections as $section) {
+        $type     = $section['container_type'] ?? 'container';
+        $secStyle = buildInlineStyles($section['styles'] ?? []);
+
+        $colsHtml = '';
+        foreach ($section['columns'] as $column) {
+            $colStyle  = buildInlineStyles($column['styles'] ?? []);
+            $colsHtml .= '<div class="col-' . $column['col_size'] . '"'
+                       . ($colStyle ? ' style="' . e($colStyle) . '"' : '') . '>';
+            foreach ($column['elements'] as $element) {
+                $colsHtml .= renderPluginElement($element);
+            }
+            $colsHtml .= '</div>';
+        }
+
+        $cols5 = count($section['columns']) === 5
+              && count(array_filter($section['columns'], fn($c) => (int) $c['col_size'] === 2)) === 5;
+        $rowHtml = '<div class="row' . ($cols5 ? ' justify-content-center' : '') . '">' . $colsHtml . '</div>';
+
+        $inner = ($type === 'container' || $type === 'full-inner')
+            ? '<div class="container">' . $rowHtml . '</div>'
+            : $rowHtml;
+
+        $html .= '<section class="pageSection pageSection--' . e($type) . '"'
+               . ($secStyle ? ' style="' . e($secStyle) . '"' : '') . '>'
+               . $inner . '</section>';
+    }
+
+    return $html;
+}
+
+// Renderiza o conteúdo dinâmico do Header ou Footer (pages.type = 'header'|'footer').
+// Devolve string vazia se não houver uma página publicada desse tipo ainda
+// (ex: antes do primeiro acesso à tela admin/header-footer, que cria os registros).
+function renderTemplateSection(string $type): string {
+    $page = Database::fetch(
+        "SELECT * FROM pages WHERE type = ? AND status = 'published' LIMIT 1",
+        [$type]
+    );
+    if (!$page) {
+        return '';
+    }
+
+    return renderSections(loadPageSectionsTree((int) $page['id']));
 }

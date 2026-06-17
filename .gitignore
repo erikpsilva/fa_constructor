@@ -7,6 +7,9 @@
 node_modules/
 dist/
 
+# Uploaded media
+uploads/
+
 # Compiled Java class files
 *.class
 

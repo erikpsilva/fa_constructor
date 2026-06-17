@@ -248,7 +248,7 @@ html, .editorBody { height: 100%; overflow: hidden; }
 }
 
 // ── Element row ───────────────────────────────────────────────
-.structureElement {
+.structureElement, .gridStructureElement {
     align-items: center;
     border: 1px solid @borderColor;
     cursor: pointer;
@@ -333,6 +333,12 @@ html, .editorBody { height: 100%; overflow: hidden; }
         cursor: pointer;
         font-size: 13px;
         margin: 0;
+    }
+
+    .input {
+        flex: 1;
+        min-width: 0;
+        text-transform: uppercase;
     }
 }
 
@@ -466,6 +472,240 @@ html, .editorBody { height: 100%; overflow: hidden; }
 // Bold in Quill = Montserrat SemiBold
 .ql-editor strong,
 .previewElement strong { font-weight: 600; }
+
+// ── Background image preview ─────────────────────────────────
+.bgImagePreview {
+    margin-top: 8px;
+
+    img {
+        border: 1px solid @borderColor;
+        display: block;
+        height: 90px;
+        margin-bottom: 6px;
+        object-fit: cover;
+        width: 100%;
+        .radius(6px);
+    }
+}
+
+// ── Slider: lista de imagens no painel ─────────────────────────
+.sliderImageList {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.sliderImageItem {
+    align-items: center;
+    background: @bgBoxContent;
+    border: 1px solid @borderColor;
+    display: flex;
+    gap: 8px;
+    padding: 8px;
+    .radius(6px);
+
+    &__thumb {
+        flex-shrink: 0;
+        height: 40px;
+        object-fit: cover;
+        width: 40px;
+        .radius(4px);
+    }
+
+    &__fields {
+        display: flex;
+        flex: 1;
+        flex-direction: column;
+        gap: 4px;
+        min-width: 0;
+
+        .input {
+            font-size: 12px;
+            height: 30px;
+            padding: 4px 8px;
+        }
+    }
+
+    &__actions {
+        align-items: center;
+        display: flex;
+        flex-direction: column;
+        flex-shrink: 0;
+        gap: 2px;
+
+        button {
+            background: @white;
+            border: 1px solid @borderColor;
+            color: lighten(@colorFont, 20%);
+            cursor: pointer;
+            font-size: 10px;
+            height: 18px;
+            line-height: 1;
+            padding: 0 4px;
+            width: 22px;
+            .radius(3px);
+            .transition(0.15s all);
+
+            &:hover:not([disabled]) { background: @primary; border-color: @primary; color: @white; }
+            &[disabled] { color: lighten(@colorFont, 45%); cursor: default; }
+        }
+    }
+}
+
+// ── Slider: Slick real também no preview do editor ────────────
+.plugin-slider {
+    &__slide img {
+        display: block;
+        height: auto;
+        width: 100%;
+    }
+
+    .slick-arrow {
+        align-items: center;
+        background: fade(@black, 35%);
+        border: none;
+        border-radius: 50%;
+        cursor: pointer;
+        display: flex;
+        height: 36px;
+        justify-content: center;
+        padding: 0;
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        transition: background 0.2s;
+        width: 36px;
+        z-index: 10;
+
+        .icon {
+            color: @white;
+            font-size: 14px;
+        }
+
+        &:hover  { background: @primary; }
+        &.slick-disabled { cursor: default; opacity: 0.3; }
+    }
+
+    .slick-prev { left: 10px; }
+    .slick-next { right: 10px; }
+
+    .slick-dots {
+        bottom: 12px;
+        display: flex !important;
+        gap: 8px;
+        justify-content: center;
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        position: absolute;
+        width: 100%;
+        z-index: 10;
+
+        li {
+            height: auto;
+            margin: 0;
+            width: auto;
+
+            button {
+                background: fade(@white, 60%);
+                border: none;
+                border-radius: 50%;
+                cursor: pointer;
+                font-size: 0;
+                height: 9px;
+                line-height: 0;
+                padding: 0;
+                width: 9px;
+
+                &:before { content: none; }
+            }
+
+            &.slick-active button { background: @primary; }
+        }
+    }
+}
+
+// ── Menu: lista de itens no painel ─────────────────────────────
+.menuItemList {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.menuItemRow {
+    background: @bgBoxContent;
+    border: 1px solid @borderColor;
+    padding: 8px;
+    .radius(6px);
+
+    &__row {
+        display: flex;
+        gap: 6px;
+        margin-bottom: 6px;
+
+        &:last-child { margin-bottom: 0; }
+
+        .input {
+            font-size: 12px;
+            height: 30px;
+            padding: 4px 8px;
+        }
+
+        select.input { flex-shrink: 0; width: 90px; }
+        input.input  { flex: 1; min-width: 0; }
+    }
+
+    &__actions {
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    &__blankLabel {
+        align-items: center;
+        color: lighten(@colorFont, 20%);
+        cursor: pointer;
+        display: flex;
+        font-size: 11px;
+        gap: 4px;
+
+        input { cursor: pointer; margin: 0; }
+    }
+
+    &__buttons {
+        display: flex;
+        gap: 2px;
+
+        button {
+            background: @white;
+            border: 1px solid @borderColor;
+            color: lighten(@colorFont, 20%);
+            cursor: pointer;
+            font-size: 10px;
+            height: 20px;
+            line-height: 1;
+            padding: 0 5px;
+            .radius(3px);
+            .transition(0.15s all);
+
+            &:hover:not([disabled]) { background: @primary; border-color: @primary; color: @white; }
+            &[disabled] { color: lighten(@colorFont, 45%); cursor: default; }
+        }
+    }
+}
+
+// ── Menu: preview simplificado no canvas ───────────────────────
+.menuPreview {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+
+    &__item {
+        color: @colorFont;
+        font-size: 14px;
+    }
+}
 
 // ── Col picker ────────────────────────────────────────────────
 .colPicker {
@@ -652,9 +892,11 @@ html, .editorBody { height: 100%; overflow: hidden; }
     &.active { box-shadow: inset 0 0 0 2px @borderColor; }
 
     .previewElement {
+        font-size: 16px;
+        line-height: 1.6;
         padding: 0;
 
-        p   { font-size: 16px; line-height: 1.6; margin: 0; word-break: break-word; }
+        p   { margin: 0; word-break: break-word; }
         em  { color: lighten(@colorFont, 35%); font-style: italic; }
         ul, ol { padding-left: 20px; }
     }
@@ -663,6 +905,80 @@ html, .editorBody { height: 100%; overflow: hidden; }
 .previewEmpty {
     color: lighten(@colorFont, 38%);
     font-style: italic;
+}
+
+// ── Grid (elemento aninhado) ───────────────────────────────────
+.editorGrid {
+    border: 1px dashed lighten(@primary, 25%);
+    margin: 4px 0;
+    padding: 10px 0 0;
+    position: relative;
+
+    &::before {
+        background: @white;
+        color: lighten(@primary, 10%);
+        font-size: 9px;
+        font-weight: @semiBold;
+        left: 8px;
+        letter-spacing: 0.5px;
+        padding: 0 4px;
+        position: absolute;
+        text-transform: uppercase;
+        top: -7px;
+        content: 'Grid';
+    }
+}
+
+.editorGridColumn {
+    cursor: pointer;
+    min-height: 36px;
+    position: relative;
+
+    &--empty {
+        &:hover { outline: 2px dashed lighten(@primary, 30%); outline-offset: -2px; .radius(6px); }
+        &::after {
+            color: lighten(@colorFont, 40%);
+            content: '+ elemento';
+            font-size: 11px;
+            font-style: italic;
+            left: 15px;
+            position: absolute;
+            top: 8px;
+        }
+    }
+}
+
+.editorGridElement {
+    box-shadow: inset 0 0 0 2px transparent;
+    cursor: pointer;
+    .radius(4px);
+    .transition(0.15s box-shadow);
+
+    &:hover { box-shadow: inset 0 0 0 2px @borderColor; }
+
+    .previewElement {
+        font-size: 16px;
+        line-height: 1.6;
+        padding: 0;
+
+        p   { margin: 0; word-break: break-word; }
+        em  { color: lighten(@colorFont, 35%); font-style: italic; }
+        ul, ol { padding-left: 20px; }
+    }
+}
+
+// ── Image element preview ──────────────────────────────────────
+.pluginImagePreview {
+    img {
+        display: inline-block;
+        height: auto;
+        max-width: 100%;
+        width: 100%;
+    }
+
+    &--left   { text-align: left; }
+    &--center { text-align: center; }
+    &--right  { text-align: right; }
 }
 
 // ── Save indicator ────────────────────────────────────────────

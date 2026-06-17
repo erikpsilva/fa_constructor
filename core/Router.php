@@ -27,7 +27,7 @@ class Router {
             "SELECT p.*, t.slug AS template_slug
              FROM pages p
              LEFT JOIN templates t ON p.template_id = t.id
-             WHERE p.slug = ? AND p.status = 'published'",
+             WHERE p.slug = ? AND p.status = 'published' AND p.type = 'page'",
             [$first]
         );
 
@@ -50,7 +50,7 @@ class Router {
             "SELECT p.*, t.slug AS template_slug
              FROM pages p
              LEFT JOIN templates t ON p.template_id = t.id
-             WHERE p.is_home = 1 AND p.status = 'published'
+             WHERE p.is_home = 1 AND p.status = 'published' AND p.type = 'page'
              LIMIT 1"
         );
 
@@ -88,34 +88,7 @@ class Router {
     }
 
     private function renderPage(array $page): void {
-        $sections = Database::fetchAll(
-            "SELECT * FROM page_sections WHERE page_id = ? ORDER BY sort_order ASC",
-            [$page['id']]
-        );
-
-        foreach ($sections as &$section) {
-            $section['id']         = (int) $section['id'];
-            $section['styles']     = json_decode($section['styles'] ?? '{}', true) ?: [];
-            $section['columns']    = Database::fetchAll(
-                "SELECT * FROM section_columns WHERE section_id = ? ORDER BY sort_order ASC",
-                [$section['id']]
-            );
-            foreach ($section['columns'] as &$column) {
-                $column['id']       = (int) $column['id'];
-                $column['col_size'] = (int) $column['col_size'];
-                $column['styles']   = json_decode($column['styles'] ?? '{}', true) ?: [];
-                $column['elements'] = Database::fetchAll(
-                    "SELECT * FROM column_elements WHERE column_id = ? ORDER BY sort_order ASC",
-                    [$column['id']]
-                );
-                foreach ($column['elements'] as &$element) {
-                    $element['content'] = json_decode($element['content'] ?? '{}', true) ?? [];
-                }
-                unset($element);
-            }
-            unset($column);
-        }
-        unset($section);
+        $sections = loadPageSectionsTree((int) $page['id']);
 
         $templateSlug = $page['template_slug'] ?? 'default';
         $templatePath = ROOT . '/templates/' . $templateSlug . '/template.php';

@@ -51,6 +51,11 @@ foreach ($sections as &$section) {
     }
 }
 unset($section, $column, $element);
+
+// Páginas disponíveis para o componente de Menu linkar (selecionar página em vez de digitar URL).
+$allPages = Database::fetchAll(
+    "SELECT id, title, slug FROM pages WHERE type = 'page' ORDER BY title ASC"
+);
 ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -71,9 +76,17 @@ unset($section, $column, $element);
 <div class="pageEditor">
 
     <!-- Top bar -->
+    <?php
+    $backUrl   = BASE_URL . '/admin/paginas';
+    $backLabel = '← Páginas';
+    if (($page['type'] ?? 'page') !== 'page') {
+        $backUrl   = BASE_URL . '/admin/header-footer';
+        $backLabel = '← Header & Rodapé';
+    }
+    ?>
     <div class="pageEditor__topbar">
         <div class="pageEditor__topbar-left">
-            <a href="<?= BASE_URL ?>/admin/paginas" class="btn btn--sm btn--secondary">← Páginas</a>
+            <a href="<?= $backUrl ?>" class="btn btn--sm btn--secondary"><?= $backLabel ?></a>
             <span class="pageEditor__topbar-title"><?= htmlspecialchars($page['title']) ?></span>
         </div>
         <div class="pageEditor__topbar-right">
@@ -101,11 +114,13 @@ unset($section, $column, $element);
 
 <script type="text/javascript" src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
 <script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
+<?php echo '<script src="' . ADMIN_BASE_URL . '/scripts/plugins/slick.js?v=' . $version . '"></script>'; ?>
 <script>
     var ADMIN_BASE_URL = "<?= ADMIN_BASE_URL ?>";
     var BASE_URL       = "<?= BASE_URL ?>";
     var PAGE_ID        = <?= $pageId ?>;
     var PAGE_DATA      = <?= json_encode(array_values($sections)) ?>;
+    var ALL_PAGES      = <?= json_encode(array_values($allPages)) ?>;
 </script>
 <?php echo '<script src="' . ADMIN_BASE_URL . '/pages/editor/editor.js?v=' . $version . '"></script>'; ?>
 

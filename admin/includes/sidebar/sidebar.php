@@ -44,6 +44,12 @@
                     P&aacute;ginas
                 </a>
             </li>
+            <li class="sidebar__item">
+                <a href="<?= BASE_URL ?>/admin/header-footer"
+                   class="sidebar__link <?= ($subRoute === 'header-footer') ? 'sidebar__link--active' : '' ?>">
+                    Header &amp; Rodap&eacute;
+                </a>
+            </li>
             <?php endif; ?>
 
         </ul>

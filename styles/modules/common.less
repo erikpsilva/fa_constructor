@@ -26,3 +26,164 @@ h1, h2, h3, h4, h5, h6 {
     padding: 0;
 }
 
+// ── Elemento de imagem (plugin "image") ────────────────────────
+.plugin-image {
+    img {
+        display: inline-block;
+        height: auto;
+        max-width: 100%;
+        width: 100%;
+    }
+
+    &--left   { text-align: left; }
+    &--center { text-align: center; }
+    &--right  { text-align: right; }
+}
+
+// ── Elemento de slider de imagens (plugin "slider", Slick.js) ──
+.plugin-slider {
+    &__slide img {
+        display: block;
+        height: auto;
+        width: 100%;
+    }
+
+    // Setas (o slick.less do projeto só tem o comportamento, sem nenhum tema visual)
+    .slick-arrow {
+        align-items: center;
+        background: fade(@black, 35%);
+        border: none;
+        border-radius: 50%;
+        cursor: pointer;
+        display: flex;
+        height: 36px;
+        justify-content: center;
+        padding: 0;
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        transition: background 0.2s;
+        width: 36px;
+        z-index: 10;
+
+        .icon {
+            color: @white;
+            font-size: 14px;
+        }
+
+        &:hover  { background: @primary; }
+        &.slick-disabled { cursor: default; opacity: 0.3; }
+    }
+
+    .slick-prev { left: 10px; }
+    .slick-next { right: 10px; }
+
+    // Bolinhas (dots)
+    .slick-dots {
+        bottom: 12px;
+        display: flex !important;
+        gap: 8px;
+        justify-content: center;
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        position: absolute;
+        width: 100%;
+        z-index: 10;
+
+        li {
+            height: auto;
+            margin: 0;
+            width: auto;
+
+            button {
+                background: fade(@white, 60%);
+                border: none;
+                border-radius: 50%;
+                cursor: pointer;
+                font-size: 0;
+                height: 9px;
+                line-height: 0;
+                padding: 0;
+                width: 9px;
+
+                &:before { content: none; }
+            }
+
+            &.slick-active button { background: @primary; }
+        }
+    }
+}
+
+// ── Elemento de menu de navegação (plugin "menu") ──────────────
+.plugin-menu {
+    align-items: center;
+    display: flex;
+    justify-content: var(--menu-align, left);
+    position: relative;
+
+    &__burger {
+        background: none;
+        border: none;
+        cursor: pointer;
+        display: none;
+        flex-direction: column;
+        gap: 5px;
+        padding: 6px;
+
+        span {
+            background: var(--menu-burger, #222);
+            border-radius: 2px;
+            display: block;
+            height: 2px;
+            width: 24px;
+        }
+    }
+
+    &__list {
+        align-items: center;
+        display: flex;
+        gap: var(--menu-gap, 24px);
+        list-style: none;
+        margin: 0;
+        padding: 0;
+    }
+
+    &__item a {
+        color: var(--menu-color, #222);
+        font-size: var(--menu-fontsize, 16px);
+        text-decoration: none;
+        transition: color 0.2s;
+
+        &:hover { color: var(--menu-hover, @primary); }
+    }
+
+    @media @tablet-small {
+        justify-content: space-between;
+
+        &__burger { display: flex; }
+
+        &__list {
+            background: @white;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.12);
+            display: none;
+            flex-direction: column;
+            gap: 0;
+            left: 0;
+            position: absolute;
+            top: 100%;
+            width: 100%;
+            z-index: 50;
+        }
+
+        &__item {
+            border-bottom: 1px solid darken(@white, 10%);
+            width: 100%;
+
+            a { display: block; padding: 12px 16px; }
+        }
+
+        &.plugin-menu--open &__list { display: flex; }
+    }
+}
+
