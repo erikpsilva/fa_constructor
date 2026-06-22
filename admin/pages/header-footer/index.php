@@ -28,7 +28,7 @@ $footer = ensureTemplateSection('footer', 'Footer');
 <!DOCTYPE html>
 <html>
 <head>
-<title>FA Constructor - Admin - Header &amp; Rodapé</title>
+<title>FA Constructor - Admin - Topo e Rodapé</title>
 <?php include ROOT . '/admin/includes/assets.php'; ?>
 </head>
 <body>
@@ -40,7 +40,7 @@ $footer = ensureTemplateSection('footer', 'Footer');
     <main class="adminLayout__content">
 
         <section class="adminHeaderFooter">
-            <h2>Header &amp; Rodapé</h2>
+            <h2>Topo e Rodapé</h2>
             <p class="adminHeaderFooter__hint">
                 Conteúdo usado em todas as páginas do site. Edite com o mesmo construtor de seções, colunas e elementos das páginas normais.
             </p>

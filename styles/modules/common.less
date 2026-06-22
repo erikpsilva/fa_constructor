@@ -51,7 +51,7 @@ h1, h2, h3, h4, h5, h6 {
     // Setas (o slick.less do projeto só tem o comportamento, sem nenhum tema visual)
     .slick-arrow {
         align-items: center;
-        background: fade(@black, 35%);
+        background: var(--slider-arrow-bg, fade(@black, 35%));
         border: none;
         border-radius: 50%;
         cursor: pointer;
@@ -71,7 +71,7 @@ h1, h2, h3, h4, h5, h6 {
             font-size: 14px;
         }
 
-        &:hover  { background: @primary; }
+        &:hover  { background: var(--slider-accent, @primary); }
         &.slick-disabled { cursor: default; opacity: 0.3; }
     }
 
@@ -110,7 +110,7 @@ h1, h2, h3, h4, h5, h6 {
                 &:before { content: none; }
             }
 
-            &.slick-active button { background: @primary; }
+            &.slick-active button { background: var(--slider-accent, @primary); }
         }
     }
 }
@@ -184,6 +184,31 @@ h1, h2, h3, h4, h5, h6 {
         }
 
         &.plugin-menu--open &__list { display: flex; }
+    }
+}
+
+// ── Elemento de botão (plugin "button") ────────────────────────
+.plugin-button {
+    display: flex;
+
+    &--left   { justify-content: flex-start; }
+    &--center { justify-content: center; }
+    &--right  { justify-content: flex-end; }
+
+    &__link {
+        align-items: center;
+        background: var(--btn-bg, @primary);
+        color: var(--btn-color, #fff);
+        display: inline-flex;
+        justify-content: center;
+        text-align: center;
+        text-decoration: none;
+        transition: background 0.2s, color 0.2s;
+
+        &:hover {
+            background: var(--btn-hover-bg, darken(@primary, 10%));
+            color: var(--btn-hover-color, #fff);
+        }
     }
 }
 

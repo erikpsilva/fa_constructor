@@ -12,10 +12,7 @@ class MenuPlugin extends PluginBase {
 
         $itemsHtml = '';
         foreach ($items as $item) {
-            $url = $this->resolveItemUrl($item);
-            if ($url === null) {
-                continue;
-            }
+            $url    = $this->resolveItemUrl($item);
             $label  = htmlspecialchars($item['label'] ?? '', ENT_QUOTES, 'UTF-8');
             $target = !empty($item['target_blank']) ? ' target="_blank" rel="noopener"' : '';
             $itemsHtml .= '<li class="plugin-menu__item"><a href="' . htmlspecialchars($url, ENT_QUOTES, 'UTF-8') . '"' . $target . '>' . $label . '</a></li>';
@@ -33,21 +30,24 @@ class MenuPlugin extends PluginBase {
              . '</nav>';
     }
 
-    private function resolveItemUrl(array $item): ?string {
+    // Nunca retorna vazio/nulo — um item sem link configurado ainda assim aparece
+    // no menu (com "#"), igual o preview do editor já fazia. Antes, um item sem
+    // URL preenchida era simplesmente descartado do render, podendo esvaziar o
+    // menu inteiro (e parecer que as cores configuradas não estavam sendo aplicadas).
+    private function resolveItemUrl(array $item): string {
         if (($item['link_type'] ?? 'url') === 'page') {
             $pageId = (int) ($item['page_id'] ?? 0);
-            if ($pageId <= 0) {
-                return null;
+            if ($pageId > 0) {
+                $page = Database::fetch("SELECT slug FROM pages WHERE id = ? AND type = 'page'", [$pageId]);
+                if ($page) {
+                    return BASE_URL . '/' . $page['slug'];
+                }
             }
-            $page = Database::fetch("SELECT slug FROM pages WHERE id = ? AND type = 'page'", [$pageId]);
-            if (!$page) {
-                return null;
-            }
-            return BASE_URL . '/' . $page['slug'];
+            return '#';
         }
 
         $url = trim($item['url'] ?? '');
-        return $url !== '' ? $url : null;
+        return $url !== '' ? $url : '#';
     }
 
     private function buildStyleAttr(): string {

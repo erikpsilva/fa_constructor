@@ -81,7 +81,7 @@ $allPages = Database::fetchAll(
     $backLabel = '← Páginas';
     if (($page['type'] ?? 'page') !== 'page') {
         $backUrl   = BASE_URL . '/admin/header-footer';
-        $backLabel = '← Header & Rodapé';
+        $backLabel = '← Topo e Rodapé';
     }
     ?>
     <div class="pageEditor__topbar">
@@ -105,7 +105,23 @@ $allPages = Database::fetchAll(
         <!-- Preview central -->
         <div class="pageEditor__preview">
             <div class="previewFrame">
+                <?php if (($page['type'] ?? 'page') === 'page'): ?>
+                    <div class="previewChromeWrap">
+                        <span class="previewChromeWrap__label">Header (visualização)</span>
+                        <iframe class="previewChrome" id="previewHeaderChrome"
+                                src="<?= BASE_URL ?>/admin/editor-chrome/header" scrolling="no"></iframe>
+                    </div>
+                <?php endif; ?>
+
                 <div id="editorCanvas"></div>
+
+                <?php if (($page['type'] ?? 'page') === 'page'): ?>
+                    <div class="previewChromeWrap">
+                        <span class="previewChromeWrap__label">Rodapé (visualização)</span>
+                        <iframe class="previewChrome" id="previewFooterChrome"
+                                src="<?= BASE_URL ?>/admin/editor-chrome/footer" scrolling="no"></iframe>
+                    </div>
+                <?php endif; ?>
             </div>
         </div>
 

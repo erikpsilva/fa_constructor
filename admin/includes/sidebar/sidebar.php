@@ -39,15 +39,15 @@
             </li>
 
             <li class="sidebar__item">
-                <a href="<?= BASE_URL ?>/admin/paginas"
-                   class="sidebar__link <?= ($subRoute === 'paginas') ? 'sidebar__link--active' : '' ?>">
-                    P&aacute;ginas
+                <a href="<?= BASE_URL ?>/admin/header-footer"
+                   class="sidebar__link <?= ($subRoute === 'header-footer') ? 'sidebar__link--active' : '' ?>">
+                    Topo e Rodap&eacute;
                 </a>
             </li>
             <li class="sidebar__item">
-                <a href="<?= BASE_URL ?>/admin/header-footer"
-                   class="sidebar__link <?= ($subRoute === 'header-footer') ? 'sidebar__link--active' : '' ?>">
-                    Header &amp; Rodap&eacute;
+                <a href="<?= BASE_URL ?>/admin/paginas"
+                   class="sidebar__link <?= ($subRoute === 'paginas') ? 'sidebar__link--active' : '' ?>">
+                    P&aacute;ginas
                 </a>
             </li>
             <?php endif; ?>

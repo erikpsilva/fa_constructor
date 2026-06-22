@@ -1,5 +1,13 @@
 $(document).ready(function () {
     Editor.init(PAGE_ID, PAGE_DATA);
+
+    // Ajusta a altura dos iframes de Header/Footer (preview-only) ao conteúdo real deles.
+    $('.previewChrome').on('load', function () {
+        try {
+            const height = this.contentWindow.document.body.scrollHeight;
+            $(this).css('height', height + 'px');
+        } catch (e) { /* same-origin esperado; ignora se não conseguir medir */ }
+    });
 });
 
 const Editor = {
@@ -401,6 +409,10 @@ const Editor = {
             <button class="pluginBtn" data-plugin="menu" data-column-id="${columnId}">
                 <span class="pluginBtn__icon">☰</span>
                 <span class="pluginBtn__label">Menu</span>
+            </button>
+            <button class="pluginBtn" data-plugin="button" data-column-id="${columnId}">
+                <span class="pluginBtn__icon">▭</span>
+                <span class="pluginBtn__label">Botão</span>
             </button>`;
         if (includeGrid) {
             html += `
@@ -779,6 +791,31 @@ const Editor = {
                             <input type="checkbox" id="sliderDotsMobile" ${settings.dots_mobile !== false ? 'checked' : ''}>
                         </div>
 
+                        <div class="panelDivider"></div>
+                        <div class="panelField">
+                            <label>Cor das setas e bolinhas</label>
+                            <div class="colorRow">
+                                <input type="color" class="colorInput" id="sliderAccentColor" value="${settings.accent_color || '#222222'}">
+                                <input type="text" class="input" id="sliderAccentColorHex" value="${settings.accent_color || ''}" placeholder="#222222">
+                            </div>
+                        </div>
+
+                        <div class="panelDivider"></div>
+                        <div class="panelField">
+                            <label>Cor de fundo</label>
+                            <div class="colorRow">
+                                <input type="checkbox" id="sliderUseBg" ${settings.bg_color ? 'checked' : ''} />
+                                <input type="color" class="colorInput" id="sliderBgColor" value="${settings.bg_color || '#ffffff'}" ${settings.bg_color ? '' : 'disabled'} />
+                                <label for="sliderUseBg" class="colorRowLabel">Ativar cor</label>
+                            </div>
+                        </div>
+
+                        <div class="panelDivider"></div>
+                        <div class="panelField">
+                            <label>Arredondamento das bordas (px)</label>
+                            <input type="number" class="input" id="sliderBorderRadius" min="0" value="${settings.border_radius || 0}">
+                        </div>
+
                         <button class="btn btn--success btn--full" id="btnApplySliderStyle">Salvar alterações</button>
 
                         <div class="panelDivider"></div>
@@ -892,7 +929,218 @@ const Editor = {
                 </div>`;
         }
 
+        if (element.plugin_type === 'button') {
+            return this.panelButtonElement(element);
+        }
+
         return `<div class="panelBody"><div class="panelSection"><p class="panelHint">Plugin não suportado.</p></div></div>`;
+    },
+
+    panelButtonElement(element) {
+        const c        = element.content || {};
+        const p        = c.padding        || {};
+        const m        = c.margin         || {};
+        const br       = c.border_radius  || {};
+        const sh       = c.shadow         || {};
+        const linkType = c.link_type || 'url';
+        const pages    = (typeof ALL_PAGES !== 'undefined' && ALL_PAGES) || [];
+
+        const pageOpts = pages.map(p2 =>
+            `<option value="${p2.id}" ${parseInt(c.page_id) === p2.id ? 'selected' : ''}>${this.escHtml(p2.title)} (/${this.escHtml(p2.slug)})</option>`
+        ).join('');
+
+        const spacingInputs = (prefix, vals) => `
+            <div class="spacingGrid">
+                <div class="spacingGrid__row">
+                    <div class="spacingGrid__field"><label>↑ Cima</label>
+                        <input type="number" class="input" id="${prefix}Top"    value="${vals.top    || 0}" min="0"></div>
+                    <div class="spacingGrid__field"><label>↓ Baixo</label>
+                        <input type="number" class="input" id="${prefix}Bottom" value="${vals.bottom || 0}" min="0"></div>
+                </div>
+                <div class="spacingGrid__row">
+                    <div class="spacingGrid__field"><label>← Esq.</label>
+                        <input type="number" class="input" id="${prefix}Left"   value="${vals.left   || 0}" min="0"></div>
+                    <div class="spacingGrid__field"><label>→ Dir.</label>
+                        <input type="number" class="input" id="${prefix}Right"  value="${vals.right  || 0}" min="0"></div>
+                </div>
+            </div>`;
+
+        return `
+            <div class="panelBody">
+                <div class="panelSection">
+                    <h4>Botão</h4>
+
+                    <div class="panelField">
+                        <label>Texto do botão</label>
+                        <input type="text" class="input" id="btnText" value="${this.escHtml(c.text || '')}" placeholder="Clique aqui">
+                    </div>
+
+                    <div class="panelDivider"></div>
+                    <div class="panelField">
+                        <label>Link</label>
+                        <select class="input" id="btnLinkType">
+                            <option value="page" ${linkType === 'page' ? 'selected' : ''}>Página</option>
+                            <option value="url"  ${linkType === 'url'  ? 'selected' : ''}>URL</option>
+                        </select>
+                    </div>
+                    <div class="panelField">
+                        <select class="input" id="btnPageSelect" ${linkType === 'page' ? '' : 'style="display:none"'}>
+                            <option value="">— Selecione a página —</option>
+                            ${pageOpts}
+                        </select>
+                        <input type="text" class="input" id="btnUrlInput" value="${this.escHtml(c.url || '')}" placeholder="https://... ou /pagina" ${linkType === 'page' ? 'style="display:none"' : ''}>
+                    </div>
+                    <div class="panelField panelField--toggle">
+                        <label>Abrir em nova aba</label>
+                        <input type="checkbox" id="btnTargetBlank" ${c.target_blank ? 'checked' : ''}>
+                    </div>
+
+                    <div class="panelDivider"></div>
+                    <div class="panelField">
+                        <label>Posição</label>
+                        <select class="input" id="btnAlign">
+                            <option value="left"   ${(c.align||'left') === 'left'   ? 'selected' : ''}>Esquerda</option>
+                            <option value="center" ${c.align === 'center' ? 'selected' : ''}>Centro</option>
+                            <option value="right"  ${c.align === 'right'  ? 'selected' : ''}>Direita</option>
+                        </select>
+                    </div>
+
+                    <div class="panelDivider"></div>
+                    <div class="panelField">
+                        <label>Largura</label>
+                        <div class="dimensionRow">
+                            <input type="number" class="input" id="btnWidthVal" value="${c.width_value || ''}" min="0" placeholder="auto">
+                            <select class="input" id="btnWidthUnit">
+                                <option value="px" ${(c.width_unit||'px') === 'px' ? 'selected' : ''}>px</option>
+                                <option value="%"  ${c.width_unit === '%'  ? 'selected' : ''}>%</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="panelField">
+                        <label>Altura</label>
+                        <div class="dimensionRow">
+                            <input type="number" class="input" id="btnHeightVal" value="${c.height_value || ''}" min="0" placeholder="auto">
+                            <select class="input" id="btnHeightUnit">
+                                <option value="px" ${(c.height_unit||'px') === 'px' ? 'selected' : ''}>px</option>
+                                <option value="%"  ${c.height_unit === '%'  ? 'selected' : ''}>%</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="panelDivider"></div>
+                    <div class="panelField">
+                        <label>Espaço interno — padding (px)</label>
+                        ${spacingInputs('btnPad', p)}
+                    </div>
+                    <div class="panelField">
+                        <label>Margem (px)</label>
+                        ${spacingInputs('btnMar', m)}
+                    </div>
+
+                    <div class="panelDivider"></div>
+                    <div class="panelField">
+                        <label>Cor do botão</label>
+                        <div class="colorRow">
+                            <input type="color" class="colorInput" id="btnBgColor" value="${c.bg_color || '#ae272c'}">
+                            <input type="text" class="input" id="btnBgColorHex" value="${c.bg_color || ''}" placeholder="#ae272c">
+                        </div>
+                    </div>
+                    <div class="panelField">
+                        <label>Cor do texto</label>
+                        <div class="colorRow">
+                            <input type="color" class="colorInput" id="btnTextColor" value="${c.text_color || '#ffffff'}">
+                            <input type="text" class="input" id="btnTextColorHex" value="${c.text_color || ''}" placeholder="#ffffff">
+                        </div>
+                    </div>
+                    <div class="panelField">
+                        <label>Cor do botão (hover)</label>
+                        <div class="colorRow">
+                            <input type="color" class="colorInput" id="btnHoverBgColor" value="${c.hover_bg_color || '#8a1f23'}">
+                            <input type="text" class="input" id="btnHoverBgColorHex" value="${c.hover_bg_color || ''}" placeholder="#8a1f23">
+                        </div>
+                    </div>
+                    <div class="panelField">
+                        <label>Cor do texto (hover)</label>
+                        <div class="colorRow">
+                            <input type="color" class="colorInput" id="btnHoverTextColor" value="${c.hover_text_color || '#ffffff'}">
+                            <input type="text" class="input" id="btnHoverTextColorHex" value="${c.hover_text_color || ''}" placeholder="#ffffff">
+                        </div>
+                    </div>
+
+                    <div class="panelDivider"></div>
+                    <div class="panelField">
+                        <label>Borda (px)</label>
+                        <div class="borderRow">
+                            <input type="number" class="input borderWidth" id="btnBorderWidth" value="${c.border_width || 0}" min="0" max="50">
+                            <span class="borderUnit">px</span>
+                            <input type="color" class="colorInput" id="btnBorderColor" value="${c.border_color || '#000000'}" />
+                        </div>
+                    </div>
+
+                    <div class="panelDivider"></div>
+                    <div class="panelField">
+                        <label>Arredondamento dos cantos (px)</label>
+                        <div class="spacingGrid">
+                            <div class="spacingGrid__row">
+                                <div class="spacingGrid__field"><label>↖ Sup. Esq.</label>
+                                    <input type="number" class="input" id="btnRadiusTL" value="${br.tl || 0}" min="0"></div>
+                                <div class="spacingGrid__field"><label>↗ Sup. Dir.</label>
+                                    <input type="number" class="input" id="btnRadiusTR" value="${br.tr || 0}" min="0"></div>
+                            </div>
+                            <div class="spacingGrid__row">
+                                <div class="spacingGrid__field"><label>↙ Inf. Esq.</label>
+                                    <input type="number" class="input" id="btnRadiusBL" value="${br.bl || 0}" min="0"></div>
+                                <div class="spacingGrid__field"><label>↘ Inf. Dir.</label>
+                                    <input type="number" class="input" id="btnRadiusBR" value="${br.br || 0}" min="0"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="panelDivider"></div>
+                    <div class="panelField">
+                        <label>Sombra</label>
+                        <div class="colorRow">
+                            <input type="checkbox" id="btnShadowEnabled" ${sh.enabled ? 'checked' : ''} />
+                            <label for="btnShadowEnabled" class="colorRowLabel">Ativar sombra</label>
+                        </div>
+                    </div>
+                    <div id="btnShadowControls" ${sh.enabled ? '' : 'style="display:none"'}>
+                        <div class="panelField">
+                            <label>Cor da sombra</label>
+                            <div class="colorRow">
+                                <input type="color" class="colorInput" id="btnShadowColor" value="${sh.color || '#000000'}">
+                            </div>
+                        </div>
+                        <div class="twoColGrid">
+                            <div class="panelField">
+                                <label>Tamanho (px)</label>
+                                <input type="number" class="input" id="btnShadowSize"  value="${sh.size     || 0}" min="0">
+                            </div>
+                            <div class="panelField">
+                                <label>Distância (px)</label>
+                                <input type="number" class="input" id="btnShadowDist"  value="${sh.distance || 0}" min="0">
+                            </div>
+                        </div>
+                        <div class="twoColGrid">
+                            <div class="panelField">
+                                <label>Ângulo (°)</label>
+                                <input type="number" class="input" id="btnShadowAngle" value="${sh.angle   !== undefined ? sh.angle   : 135}" min="0" max="360">
+                            </div>
+                            <div class="panelField">
+                                <label>Opacidade (%)</label>
+                                <input type="number" class="input" id="btnShadowOp"    value="${sh.opacity !== undefined ? sh.opacity : 30}"  min="0" max="100">
+                            </div>
+                        </div>
+                    </div>
+
+                    <button class="btn btn--success btn--full" id="btnApplyButtonStyle">Salvar alterações</button>
+
+                    <div class="panelDivider"></div>
+                    <button class="btn btn--danger btn--full" id="btnDeleteElement" data-id="${element.id}">Remover elemento</button>
+                    <div class="panelDivider"></div>
+                    <button class="btn btn--secondary btn--full btnBack">← Voltar</button>
+                </div>
+            </div>`;
     },
 
     panelGrid(data) {
@@ -1156,16 +1404,106 @@ const Editor = {
             return this._renderMenuPreview(c);
         }
 
+        if (element.plugin_type === 'button') {
+            return this._renderButtonPreview(c);
+        }
+
         return '';
     },
 
-    // Preview simplificado (sem hambúrguer funcional) — só mostra os itens em fileira.
-    // O comportamento responsivo de verdade só roda na página publicada (scripts/common.js).
+    // Mesma estrutura/estilo usados na página publicada, pra refletir de verdade
+    // alinhamento, espaçamento, cores e tamanho de fonte configurados.
     _renderMenuPreview(c) {
         const items = c.items || [];
         if (!items.length) return '<em class="previewEmpty">Nenhum item no menu</em>';
-        const labels = items.map(i => `<span class="menuPreview__item">${this.escHtml(i.label || '(sem texto)')}</span>`).join('');
-        return `<div class="menuPreview">${labels}</div>`;
+
+        const itemsHtml = items
+            .map(i => `<li class="plugin-menu__item"><a href="#">${this.escHtml(i.label || '(sem texto)')}</a></li>`)
+            .join('');
+        const styleAttr = this._buildMenuStyleAttr(c.settings || {});
+
+        return `<nav class="plugin-menu"${styleAttr}>
+            <button type="button" class="plugin-menu__burger"><span></span><span></span><span></span></button>
+            <ul class="plugin-menu__list">${itemsHtml}</ul>
+        </nav>`;
+    },
+
+    _buildMenuStyleAttr(s) {
+        const align = ['left', 'center', 'right'].includes(s.align) ? s.align : 'left';
+        const vars  = {
+            '--menu-align':    align,
+            '--menu-gap':      `${Math.max(0, parseInt(s.gap) || 24)}px`,
+            '--menu-color':    s.text_color   || '#222222',
+            '--menu-hover':    s.hover_color  || '#ae272c',
+            '--menu-fontsize': `${Math.max(10, parseInt(s.font_size) || 16)}px`,
+            '--menu-burger':   s.burger_color || '#222222',
+        };
+        let css = '';
+        for (const key in vars) css += `${key}:${vars[key]};`;
+        return ` style="${css}"`;
+    },
+
+    // Mesma estrutura/CSS vars do PHP (ButtonPlugin) — geometria (tamanho, padding,
+    // margem, borda, sombra) vai inline; cor normal/hover vai como CSS var, já que
+    // hover não pode ser feito com style inline (precisa de uma regra :hover própria).
+    _renderButtonPreview(c) {
+        const text = (c.text || '').trim();
+        if (!text) return '<em class="previewEmpty">Botão sem texto</em>';
+
+        const align     = ['left', 'center', 'right'].includes(c.align) ? c.align : 'left';
+        const geometry  = this._buildButtonGeometryStyle(c);
+        const colorVars = this._buildButtonColorVarsAttr(c);
+
+        return `<div class="plugin-button plugin-button--${align}"${colorVars}>
+            <a class="plugin-button__link" href="#"${geometry ? ` style="${geometry}"` : ''}>${this.escHtml(text)}</a>
+        </div>`;
+    },
+
+    _buildButtonGeometryStyle(c) {
+        let css = '';
+        if (c.width_value)  css += `width:${c.width_value}${c.width_unit || 'px'};`;
+        if (c.height_value) css += `height:${c.height_value}${c.height_unit || 'px'};`;
+
+        const p = c.padding || {};
+        if (p.top || p.right || p.bottom || p.left)
+            css += `padding:${p.top||0}px ${p.right||0}px ${p.bottom||0}px ${p.left||0}px;`;
+
+        const m = c.margin || {};
+        if (m.top || m.right || m.bottom || m.left)
+            css += `margin:${m.top||0}px ${m.right||0}px ${m.bottom||0}px ${m.left||0}px;`;
+
+        if (c.border_width > 0)
+            css += `border:${c.border_width}px solid ${c.border_color || '#000000'};`;
+
+        const br = c.border_radius || {};
+        if (br.tl || br.tr || br.br || br.bl)
+            css += `border-radius:${br.tl||0}px ${br.tr||0}px ${br.br||0}px ${br.bl||0}px;`;
+
+        const sh = c.shadow;
+        if (sh && sh.enabled) {
+            const rad   = (sh.angle || 0) * Math.PI / 180;
+            const ox    = Math.round(Math.sin(rad) * (sh.distance || 0));
+            const oy    = Math.round(Math.cos(rad) * (sh.distance || 0));
+            const alpha = ((sh.opacity || 0) / 100).toFixed(2);
+            const hex   = (sh.color || '#000000').replace('#', '');
+            const r     = parseInt(hex.slice(0, 2), 16);
+            const g     = parseInt(hex.slice(2, 4), 16);
+            const b     = parseInt(hex.slice(4, 6), 16);
+            css += `box-shadow:${ox}px ${oy}px ${sh.size || 0}px rgba(${r},${g},${b},${alpha});`;
+        }
+        return css;
+    },
+
+    _buildButtonColorVarsAttr(c) {
+        const vars = {
+            '--btn-bg':          c.bg_color         || '#ae272c',
+            '--btn-color':       c.text_color       || '#ffffff',
+            '--btn-hover-bg':    c.hover_bg_color   || '#8a1f23',
+            '--btn-hover-color': c.hover_text_color || '#ffffff',
+        };
+        let css = '';
+        for (const key in vars) css += `${key}:${vars[key]};`;
+        return ` style="${css}"`;
     },
 
     // Mesma estrutura usada na página publicada — o Slick é inicializado de fato
@@ -1175,8 +1513,34 @@ const Editor = {
         const images = c.images || [];
         if (!images.length) return '<em class="previewEmpty">Nenhuma imagem no slider</em>';
         const settingsJson = this.escHtml(this._buildSlickSettingsJson(c.settings || {}));
+        const styleAttr     = this._buildSliderStyleAttr(c.settings || {});
         const slides = images.map(img => `<div class="plugin-slider__slide"><img src="${img.url}" alt=""></div>`).join('');
-        return `<div class="plugin-slider" data-slick="${settingsJson}">${slides}</div>`;
+        return `<div class="plugin-slider"${styleAttr} data-slick="${settingsJson}">${slides}</div>`;
+    },
+
+    // Mesma cor configurável usada no PHP (SliderPlugin::buildStyleAttr) — não depende
+    // de @primary, que é diferente entre o bundle admin e o bundle público.
+    _buildSliderStyleAttr(s) {
+        let color = (s.accent_color || '').trim();
+        if (!/^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(color)) color = '#222222';
+        const [r, g, b] = this._hexToRgb(color);
+        let css = `--slider-accent:${color};--slider-arrow-bg:rgba(${r},${g},${b},0.35);`;
+        if (s.bg_color) css += `background-color:${s.bg_color};`;
+        if (s.border_radius) css += `border-radius:${s.border_radius}px;overflow:hidden;`;
+        return ` style="${css}"`;
+    },
+
+    _hexToRgb(hex) {
+        let h = hex.replace('#', '');
+        if (h.length === 3) h = h.split('').map(c => c + c).join('');
+        const num = parseInt(h, 16);
+        return [(num >> 16) & 255, (num >> 8) & 255, num & 255];
+    },
+
+    _normalizeColor(hexVal, fallbackVal) {
+        let v = (hexVal || '').trim();
+        if (v && !v.startsWith('#')) v = '#' + v;
+        return /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(v) ? v : fallbackVal;
     },
 
     _buildSlickSettingsJson(s) {
@@ -1262,6 +1626,7 @@ const Editor = {
                 toolbar: [
                     ['bold', 'italic', 'underline'],
                     [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+                    ['link'],
                     ['clean']
                 ]
             }
@@ -1351,6 +1716,9 @@ const Editor = {
             arrows_mobile:    $('#sliderArrowsMobile').is(':checked'),
             dots_desktop:     $('#sliderDotsDesktop').is(':checked'),
             dots_mobile:      $('#sliderDotsMobile').is(':checked'),
+            accent_color:     this._normalizeColor($('#sliderAccentColorHex').val(), $('#sliderAccentColor').val()),
+            bg_color:         $('#sliderUseBg').is(':checked') ? $('#sliderBgColor').val() : '',
+            border_radius:    parseInt($('#sliderBorderRadius').val()) || 0,
         };
 
         this._persistElementContent({ images, settings });
@@ -1373,22 +1741,67 @@ const Editor = {
             };
         });
 
-        const normalizeColor = (hexVal, fallbackVal) => {
-            let v = (hexVal || '').trim();
-            if (v && !v.startsWith('#')) v = '#' + v;
-            return /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(v) ? v : fallbackVal;
-        };
-
         const settings = {
             align:        $('#menuAlign').val() || 'left',
             gap:          Math.max(0, parseInt($('#menuGap').val()) || 0),
             font_size:    Math.max(10, parseInt($('#menuFontSize').val()) || 16),
-            text_color:   normalizeColor($('#menuTextColorHex').val(),   $('#menuTextColor').val()),
-            hover_color:  normalizeColor($('#menuHoverColorHex').val(),  $('#menuHoverColor').val()),
-            burger_color: normalizeColor($('#menuBurgerColorHex').val(), $('#menuBurgerColor').val()),
+            text_color:   this._normalizeColor($('#menuTextColorHex').val(),   $('#menuTextColor').val()),
+            hover_color:  this._normalizeColor($('#menuHoverColorHex').val(),  $('#menuHoverColor').val()),
+            burger_color: this._normalizeColor($('#menuBurgerColorHex').val(), $('#menuBurgerColor').val()),
         };
 
         this._persistElementContent({ items, settings });
+    },
+
+    saveButtonElementFields() {
+        if (!['element', 'grid-element'].includes(this.state.mode)) return;
+
+        const content = {
+            text:              $('#btnText').val().trim(),
+            link_type:         $('#btnLinkType').val() || 'url',
+            page_id:           $('#btnPageSelect').val() || '',
+            url:               $('#btnUrlInput').val().trim(),
+            target_blank:      $('#btnTargetBlank').is(':checked'),
+            align:             $('#btnAlign').val() || 'left',
+            width_value:       parseInt($('#btnWidthVal').val())  || '',
+            width_unit:        $('#btnWidthUnit').val()  || 'px',
+            height_value:      parseInt($('#btnHeightVal').val()) || '',
+            height_unit:       $('#btnHeightUnit').val() || 'px',
+            padding: {
+                top:    parseInt($('#btnPadTop').val())    || 0,
+                right:  parseInt($('#btnPadRight').val())  || 0,
+                bottom: parseInt($('#btnPadBottom').val()) || 0,
+                left:   parseInt($('#btnPadLeft').val())   || 0,
+            },
+            margin: {
+                top:    parseInt($('#btnMarTop').val())    || 0,
+                right:  parseInt($('#btnMarRight').val())  || 0,
+                bottom: parseInt($('#btnMarBottom').val()) || 0,
+                left:   parseInt($('#btnMarLeft').val())   || 0,
+            },
+            bg_color:          this._normalizeColor($('#btnBgColorHex').val(),         $('#btnBgColor').val()),
+            text_color:        this._normalizeColor($('#btnTextColorHex').val(),       $('#btnTextColor').val()),
+            hover_bg_color:    this._normalizeColor($('#btnHoverBgColorHex').val(),    $('#btnHoverBgColor').val()),
+            hover_text_color:  this._normalizeColor($('#btnHoverTextColorHex').val(),  $('#btnHoverTextColor').val()),
+            border_width:      parseInt($('#btnBorderWidth').val()) || 0,
+            border_color:      $('#btnBorderColor').val() || '#000000',
+            border_radius: {
+                tl: parseInt($('#btnRadiusTL').val()) || 0,
+                tr: parseInt($('#btnRadiusTR').val()) || 0,
+                br: parseInt($('#btnRadiusBR').val()) || 0,
+                bl: parseInt($('#btnRadiusBL').val()) || 0,
+            },
+            shadow: {
+                enabled:  $('#btnShadowEnabled').is(':checked'),
+                color:    $('#btnShadowColor').val() || '#000000',
+                size:     parseInt($('#btnShadowSize').val())  || 0,
+                distance: parseInt($('#btnShadowDist').val())  || 0,
+                angle:    parseInt($('#btnShadowAngle').val()) || 0,
+                opacity:  parseInt($('#btnShadowOp').val())    || 0,
+            },
+        };
+
+        this._persistElementContent(content);
     },
 
     // ── Events ────────────────────────────────────────────────
@@ -1933,7 +2346,35 @@ const Editor = {
         $(document).on('input change', '#menuHoverColor',  function () { $('#menuHoverColorHex').val($(this).val()); });
         $(document).on('input change', '#menuBurgerColor', function () { $('#menuBurgerColorHex').val($(this).val()); });
 
+        // Slider: color picker ↔ hex input sync
+        $(document).on('input change', '#sliderAccentColor', function () { $('#sliderAccentColorHex').val($(this).val()); });
+
+        // Slider: bg color toggle (visual only)
+        $(document).on('change', '#sliderUseBg', function () {
+            $('#sliderBgColor').prop('disabled', !this.checked);
+        });
+
         $(document).on('click', '#btnApplyMenuStyle', () => E.saveMenuElementFields());
+
+        // Button: link type toggle (visual only)
+        $(document).on('change', '#btnLinkType', function () {
+            const isPage = $(this).val() === 'page';
+            $('#btnPageSelect').toggle(isPage);
+            $('#btnUrlInput').toggle(!isPage);
+        });
+
+        // Button: shadow toggle (visual only)
+        $(document).on('change', '#btnShadowEnabled', function () {
+            $('#btnShadowControls').toggle(this.checked);
+        });
+
+        // Button: color pickers ↔ hex inputs sync
+        $(document).on('input change', '#btnBgColor',         function () { $('#btnBgColorHex').val($(this).val()); });
+        $(document).on('input change', '#btnTextColor',        function () { $('#btnTextColorHex').val($(this).val()); });
+        $(document).on('input change', '#btnHoverBgColor',     function () { $('#btnHoverBgColorHex').val($(this).val()); });
+        $(document).on('input change', '#btnHoverTextColor',   function () { $('#btnHoverTextColorHex').val($(this).val()); });
+
+        $(document).on('click', '#btnApplyButtonStyle', () => E.saveButtonElementFields());
 
         // Back
         $(document).on('click', '.btnBack', () => {
@@ -2450,6 +2891,10 @@ const Editor = {
         if (element.plugin_type === 'menu') {
             const n = (c.items || []).length;
             return `Menu (${n} ${n === 1 ? 'item' : 'itens'})`;
+        }
+        if (element.plugin_type === 'button') {
+            const t = (c.text || '').trim();
+            return t ? this.escHtml(t) : 'Botão (sem texto)';
         }
         return this.escHtml(element.plugin_type);
     },

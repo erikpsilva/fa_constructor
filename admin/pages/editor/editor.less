@@ -432,7 +432,7 @@ html, .editorBody { height: 100%; overflow: hidden; }
     border: 1px solid @borderColor !important;
     font-family: @font;
     .radius(6px);
-    overflow: hidden;
+    overflow: visible; // O Quill mostra um popup pra inserir link (.ql-tooltip) que não pode ser cortado
 
     .ql-toolbar {
         border: none !important;
@@ -563,7 +563,7 @@ html, .editorBody { height: 100%; overflow: hidden; }
 
     .slick-arrow {
         align-items: center;
-        background: fade(@black, 35%);
+        background: var(--slider-arrow-bg, fade(@black, 35%));
         border: none;
         border-radius: 50%;
         cursor: pointer;
@@ -583,7 +583,7 @@ html, .editorBody { height: 100%; overflow: hidden; }
             font-size: 14px;
         }
 
-        &:hover  { background: @primary; }
+        &:hover  { background: var(--slider-accent, @primary); }
         &.slick-disabled { cursor: default; opacity: 0.3; }
     }
 
@@ -621,7 +621,7 @@ html, .editorBody { height: 100%; overflow: hidden; }
                 &:before { content: none; }
             }
 
-            &.slick-active button { background: @primary; }
+            &.slick-active button { background: var(--slider-accent, @primary); }
         }
     }
 }
@@ -695,15 +695,100 @@ html, .editorBody { height: 100%; overflow: hidden; }
     }
 }
 
-// ── Menu: preview simplificado no canvas ───────────────────────
-.menuPreview {
+// ── Menu: mesmo estilo real usado na página publicada ──────────
+.plugin-menu {
+    align-items: center;
     display: flex;
-    flex-wrap: wrap;
-    gap: 16px;
+    justify-content: var(--menu-align, left);
+    position: relative;
 
-    &__item {
-        color: @colorFont;
-        font-size: 14px;
+    &__burger {
+        background: none;
+        border: none;
+        cursor: pointer;
+        display: none;
+        flex-direction: column;
+        gap: 5px;
+        padding: 6px;
+
+        span {
+            background: var(--menu-burger, #222);
+            border-radius: 2px;
+            display: block;
+            height: 2px;
+            width: 24px;
+        }
+    }
+
+    &__list {
+        align-items: center;
+        display: flex;
+        gap: var(--menu-gap, 24px);
+        list-style: none;
+        margin: 0;
+        padding: 0;
+    }
+
+    &__item a {
+        color: var(--menu-color, #222);
+        font-size: var(--menu-fontsize, 16px);
+        text-decoration: none;
+        transition: color 0.2s;
+
+        &:hover { color: var(--menu-hover, @primary); }
+    }
+
+    @media @tabletSM {
+        justify-content: space-between;
+
+        &__burger { display: flex; }
+
+        &__list {
+            background: @white;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.12);
+            display: none;
+            flex-direction: column;
+            gap: 0;
+            left: 0;
+            position: absolute;
+            top: 100%;
+            width: 100%;
+            z-index: 50;
+        }
+
+        &__item {
+            border-bottom: 1px solid @borderColor;
+            width: 100%;
+
+            a { display: block; padding: 12px 16px; }
+        }
+
+        &.plugin-menu--open &__list { display: flex; }
+    }
+}
+
+// ── Elemento de botão (plugin "button") ────────────────────────
+.plugin-button {
+    display: flex;
+
+    &--left   { justify-content: flex-start; }
+    &--center { justify-content: center; }
+    &--right  { justify-content: flex-end; }
+
+    &__link {
+        align-items: center;
+        background: var(--btn-bg, @primary);
+        color: var(--btn-color, #fff);
+        display: inline-flex;
+        justify-content: center;
+        text-align: center;
+        text-decoration: none;
+        transition: background 0.2s, color 0.2s;
+
+        &:hover {
+            background: var(--btn-hover-bg, darken(@primary, 10%));
+            color: var(--btn-hover-color, #fff);
+        }
     }
 }
 
@@ -794,6 +879,29 @@ html, .editorBody { height: 100%; overflow: hidden; }
     max-width: 1200px;
     min-height: calc(100vh - 135px);
     padding: 0;
+}
+
+// ── Header/Footer reais, exibidos como referência (não editáveis aqui) ──
+.previewChromeWrap {
+    position: relative;
+
+    &__label {
+        background: lighten(@primary, 50%);
+        color: darken(@primary, 5%);
+        display: block;
+        font-size: 10px;
+        font-weight: @semiBold;
+        letter-spacing: 0.5px;
+        padding: 3px 10px;
+        text-transform: uppercase;
+    }
+}
+
+.previewChrome {
+    border: none;
+    display: block;
+    pointer-events: none;
+    width: 100%;
 }
 
 // ── Canvas: empty state ───────────────────────────────────────
