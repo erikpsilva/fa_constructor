@@ -118,21 +118,21 @@ class TestimonialsPlugin extends PluginBase {
         $st = $this->config['style'] ?? [];
 
         $vars = [
-            '--dep-bg'          => $st['section_bg']   ?: 'transparent',
-            '--dep-accent'      => $st['accent']       ?: '#ae272c',
-            '--dep-eyebrow'     => $st['eyebrow_color'] ?: '#ae272c',
-            '--dep-title'       => $st['title_color']  ?: '#111111',
-            '--dep-card-bg'     => $st['card_bg']      ?: '#ffffff',
+            '--dep-bg'          => ($st['section_bg'] ?? '')   ?: 'transparent',
+            '--dep-accent'      => ($st['accent'] ?? '')       ?: '#ae272c',
+            '--dep-eyebrow'     => ($st['eyebrow_color'] ?? '') ?: '#ae272c',
+            '--dep-title'       => ($st['title_color'] ?? '')  ?: '#111111',
+            '--dep-card-bg'     => ($st['card_bg'] ?? '')      ?: '#ffffff',
             '--dep-card-radius' => max(0, (int) ($st['card_radius'] ?? 10)) . 'px',
             '--dep-card-pad'    => max(0, (int) ($st['card_padding'] ?? 28)) . 'px',
-            '--dep-quote'       => $st['quote_color']  ?: '#555555',
-            '--dep-quote-size'  => max(10, (int) ($st['quote_size'] ?? 15)) . 'px',
-            '--dep-name'        => $st['name_color']   ?: '#111111',
-            '--dep-avatar-bg'   => $st['avatar_bg']    ?: '#f3d9dc',
-            '--dep-avatar-color' => $st['avatar_color'] ?: '#ae272c',
+            '--dep-quote'       => ($st['quote_color'] ?? '')  ?: '#555555',
+            '--dep-quote-size'  => fluidFontSize(max(10, (int) ($st['quote_size'] ?? 15))),
+            '--dep-name'        => ($st['name_color'] ?? '')   ?: '#111111',
+            '--dep-avatar-bg'   => ($st['avatar_bg'] ?? '')    ?: '#f3d9dc',
+            '--dep-avatar-color' => ($st['avatar_color'] ?? '') ?: '#ae272c',
             '--dep-gap'         => max(0, (int) ($st['gap'] ?? 16)) . 'px',
             '--dep-card-border' => ($st['card_border_width'] ?? 0) > 0
-                ? (int) $st['card_border_width'] . 'px solid ' . ($st['card_border_color'] ?: '#e0e0e0')
+                ? (int) $st['card_border_width'] . 'px solid ' . (($st['card_border_color'] ?? '') ?: '#e0e0e0')
                 : 'none',
             '--dep-card-shadow' => !empty($st['card_shadow']) ? '0 6px 24px rgba(0,0,0,0.10)' : 'none',
         ];

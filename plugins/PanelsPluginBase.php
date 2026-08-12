@@ -33,7 +33,7 @@ abstract class PanelsPluginBase extends PluginBase {
             '--panels-title-bg'     => $s['title_bg']     ?? '#f2f2f2',
             '--panels-active-color' => $s['active_color'] ?? '#ffffff',
             '--panels-active-bg'    => $s['active_bg']    ?? '#ae272c',
-            '--panels-font-size'    => (int) ($s['font_size'] ?? 16) . 'px',
+            '--panels-font-size'    => fluidFontSize(max(10, (int) ($s['font_size'] ?? 16))),
             '--panels-gap'          => (int) ($s['gap'] ?? 8) . 'px',
             '--panels-divider'      => $s['divider_color'] ?? '#e0e0e0',
         ];

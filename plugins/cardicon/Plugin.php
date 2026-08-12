@@ -143,7 +143,7 @@ class CardiconPlugin extends PluginBase {
             $align = 'left';
         }
 
-        $css = 'font-size:' . max(8, (int) ($t['font_size'] ?? $tamanhoPadrao)) . 'px;'
+        $css = 'font-size:' . fluidFontSize(max(8, (int) ($t['font_size'] ?? $tamanhoPadrao)), $t['font_size_min'] ?? null) . ';'
              . 'color:' . $this->cor($t['color'] ?? '', '#222222') . ';'
              . 'text-align:' . $align . ';';
 

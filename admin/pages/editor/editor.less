@@ -138,7 +138,11 @@ html, .editorBody { height: 100%; overflow: hidden; }
 }
 
 .structureSection {
-    margin-bottom: 8px;
+    margin-bottom: 22px;
+
+    &:last-child {
+        margin-bottom: 0;
+    }
 
     &__header {
         align-items: center;
@@ -832,12 +836,12 @@ html, .editorBody { height: 100%; overflow: hidden; }
 
     &__item.is-open > &__itemTop > &__caret::before { transform: rotate(-135deg); margin-top: 3px; }
 
-    @media @tabletSM {
-        justify-content: space-between;
+    &--mobile {
+        justify-content: var(--menu-mobile-align, flex-end);
 
-        &__burger { display: flex; }
+        .plugin-menu__burger { display: flex; }
 
-        &__list {
+        .plugin-menu__list {
             background: @white;
             box-shadow: 0 8px 16px rgba(0,0,0,0.12);
             display: none;
@@ -850,19 +854,19 @@ html, .editorBody { height: 100%; overflow: hidden; }
             z-index: 50;
         }
 
-        &__item {
+        .plugin-menu__item {
             border-bottom: 1px solid darken(@white, 10%);
             width: 100%;
         }
 
-        &__itemTop { justify-content: space-between; padding-right: 12px; }
+        .plugin-menu__itemTop { justify-content: space-between; padding-right: 12px; }
 
-        &__link { display: block; padding: 12px 16px; }
+        .plugin-menu__link { display: block; padding: 12px 16px; }
 
-        &__caret { height: 32px; width: 32px; }
+        .plugin-menu__caret { height: 32px; width: 32px; }
 
         // No celular o submenu abre empurrando o conteúdo, e não flutuando por cima.
-        &__sub {
+        .plugin-menu__sub {
             border: none;
             border-radius: 0;
             box-shadow: none;
@@ -870,19 +874,54 @@ html, .editorBody { height: 100%; overflow: hidden; }
             position: static;
         }
 
-        &__sub--mega &__sublist { grid-template-columns: 1fr; }
+        .plugin-menu__sub--mega .plugin-menu__sublist { grid-template-columns: 1fr; }
 
-        &__sublink { padding: 9px 28px; }
+        .plugin-menu__sublink { padding: 9px 28px; }
 
         // No hover não abre no celular: só o clique na setinha (.is-open).
-        &__item--has-sub:hover > &__sub { display: none; }
-        &__item.is-open > &__sub { display: block; }
+        .plugin-menu__item--has-sub:hover > .plugin-menu__sub { display: none; }
+        .plugin-menu__item.is-open > .plugin-menu__sub { display: block; }
 
-        &.plugin-menu--open &__list { display: flex; }
+        &.plugin-menu--open .plugin-menu__list { display: flex; }
     }
 }
 
 // ── Elemento de botão (plugin "button") ────────────────────────
+body.plugin-menu-fullscreen-open { overflow: hidden; }
+
+.plugin-menu--mobile.plugin-menu--mobile-fullscreen.plugin-menu--open {
+    .plugin-menu__list {
+        align-items: stretch;
+        background: var(--submenu-bg, @white);
+        display: flex;
+        height: 100vh;
+        height: 100dvh;
+        inset: 0;
+        overflow-y: auto;
+        padding: 88px 24px 32px;
+        position: fixed;
+        width: 100vw;
+        z-index: 9998;
+    }
+
+    .plugin-menu__burger {
+        background: var(--submenu-bg, @white);
+        border-radius: 6px;
+        position: fixed;
+        top: 24px;
+        z-index: 9999;
+
+        span { transition: transform 0.2s, opacity 0.2s; }
+        span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+        span:nth-child(2) { opacity: 0; }
+        span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+    }
+
+    &.plugin-menu--burger-left .plugin-menu__burger { left: 24px; right: auto; }
+    &.plugin-menu--burger-center .plugin-menu__burger { left: 50%; right: auto; transform: translateX(-50%); }
+    &.plugin-menu--burger-right .plugin-menu__burger { left: auto; right: 24px; }
+}
+
 .plugin-button {
     display: flex;
 
@@ -1572,6 +1611,27 @@ html, .editorBody { height: 100%; overflow: hidden; }
     .input { flex: 1; height: 34px; }
 }
 
+.gridResponsiveWidthRow {
+    &.is-hidden .gridResponsiveWidthSelect { opacity: 0.45; }
+}
+
+.gridResponsiveHide {
+    align-items: center;
+    color: lighten(@colorFont, 15%);
+    cursor: pointer;
+    display: flex !important;
+    font-size: 11px !important;
+    gap: 4px;
+    width: auto !important;
+
+    input {
+        accent-color: @primary;
+        height: 15px;
+        margin: 0;
+        width: 15px;
+    }
+}
+
 .gridWidths__total {
     font-size: 11px;
     line-height: 1.4;
@@ -2252,4 +2312,77 @@ html, .editorBody { height: 100%; overflow: hidden; }
     .ql-toolbar { padding: 5px 6px; }
     .ql-container { min-height: 84px; }
     .ql-editor { min-height: 84px; padding: 10px 12px; }
+}
+
+// ── Bloco flutuante (plugin "flutuante") ───────────────────────
+// A seção vira o contexto de posicionamento e a coluna sai do caminho, para o
+// bloco poder ser posicionado sobre a seção inteira (ex: por cima do banner).
+.pageSection:has(.plugin-flutuante),
+.editorSection:has(.plugin-flutuante) { position: relative; }
+
+.pageSection:has(.plugin-flutuante) > .container,
+.editorSection:has(.plugin-flutuante) > .container { position: static; }
+
+[class*="col-"]:has(> .plugin-flutuante),
+[class*="col-"]:has(> .previewElement > .plugin-flutuante) { position: static; }
+
+.plugin-flutuante {
+    position: absolute;
+
+    // Modo normal: volta para o fluxo, sem perder o resto da configuração.
+    &--normal {
+        position: relative;
+        transform: none !important;
+    }
+
+    &__inner { position: relative; }
+
+    @media @tabletSM {
+        // Posição própria no celular, quando configurada.
+        left: var(--flut-x-mobile, unset);
+        top:  var(--flut-y-mobile, unset);
+
+        &--hide-mobile { display: none; }
+    }
+}
+
+// ── Bloco flutuante no canvas do editor ────────────────────────
+// A seção do canvas vira o contexto de posicionamento, e os wrappers do editor
+// (coluna, elemento, previewElement) saem do caminho — senão o bloco se
+// posicionaria dentro do wrapper em vez da seção.
+.editorSection:has(.editorFlutuante) { position: relative; }
+
+.editorColumn:has(.editorFlutuante),
+.editorElement:has(.editorFlutuante),
+.editorElement:has(.editorFlutuante) > .previewElement { position: static; }
+
+.editorFlutuante {
+    outline: 1px dashed fade(@primary, 60%);
+    outline-offset: 2px;
+
+    &.is-dragging {
+        cursor: grabbing;
+        opacity: 0.85;
+        outline-style: solid;
+    }
+
+    &__handle {
+        align-items: center;
+        background: @primary;
+        border-radius: 4px;
+        color: @white;
+        cursor: grab;
+        display: flex;
+        font-size: 12px;
+        height: 22px;
+        justify-content: center;
+        left: -2px;
+        line-height: 1;
+        position: absolute;
+        top: -24px;
+        width: 26px;
+        z-index: 3;
+
+        &:active { cursor: grabbing; }
+    }
 }

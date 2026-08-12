@@ -22,7 +22,8 @@ class TextPlugin extends PluginBase {
     private function buildWrapperStyle(): string {
         $css = '';
         if (!empty($this->config['font_size'])) {
-            $css .= 'font-size:' . (int) $this->config['font_size'] . 'px;';
+            // Encolhe sozinho em telas menores; o mínimo é opcional (ver fluidFontSize).
+            $css .= 'font-size:' . fluidFontSize((int) $this->config['font_size'], $this->config['font_size_min'] ?? null) . ';';
         }
         $color = $this->config['text_color'] ?? '';
         if ($color && preg_match('/^#([0-9a-f]{3}|[0-9a-f]{6})$/i', $color)) {
@@ -39,7 +40,7 @@ class TextPlugin extends PluginBase {
     }
 
     public function getDefaultConfig(): array {
-        return ['html' => ''];
+        return ['html' => '', 'font_size_min' => ''];
     }
 
     public function getEditorFields(): array {

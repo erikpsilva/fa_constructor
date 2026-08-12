@@ -1,5 +1,33 @@
 $( document ).ready(function() {
 
+    // Header fixo/compacto configurado em "Topo e Rodapé". O wrapper conserva a
+    // altura original quando o conteúdo vira fixed, evitando o salto da página.
+    $('.dynamicHeader--enabled').each(function () {
+        var $header = $(this);
+        var $content = $header.children('.dynamicHeader__content');
+        var offset = Math.max(0, parseInt($header.data('sticky-offset')) || 0);
+        var ticking = false;
+
+        function updateStickyHeader() {
+            var compact = window.pageYOffset >= offset;
+            if (compact && !$header.hasClass('is-compact')) {
+                $header.css('height', $content.outerHeight() + 'px').addClass('is-compact');
+            } else if (!compact && $header.hasClass('is-compact')) {
+                $header.removeClass('is-compact').css('height', '');
+            }
+            ticking = false;
+        }
+
+        $(window).on('scroll.dynamicHeader resize.dynamicHeader', function () {
+            if (!ticking) {
+                ticking = true;
+                window.requestAnimationFrame(updateStickyHeader);
+            }
+        });
+
+        updateStickyHeader();
+    });
+
     // Inicializa todos os sliders de imagens (plugin "slider").
     // As opções (slidesToShow, autoplay, arrows, dots, etc.) vêm do atributo data-slick de cada slider.
     if ($.fn.slick) {
@@ -9,8 +37,33 @@ $( document ).ready(function() {
     }
 
     // Menu de navegação (plugin "menu"): abre/fecha o menu hambúrguer no mobile.
+    function applyMenuResponsive() {
+        var width = window.innerWidth;
+        $('.plugin-menu').each(function () {
+            var $menu = $(this);
+            var breakpoint = Math.max(320, Math.min(2000, parseInt($menu.data('menu-breakpoint')) || 767));
+            var mobile = width <= breakpoint;
+            $menu.toggleClass('plugin-menu--mobile', mobile);
+            if (!mobile) {
+                $menu.removeClass('plugin-menu--open').find('.plugin-menu__item').removeClass('is-open');
+            }
+        });
+        syncFullscreenMenuBody();
+    }
+
+    function syncFullscreenMenuBody() {
+        $('body').toggleClass(
+            'plugin-menu-fullscreen-open',
+            $('.plugin-menu--mobile-fullscreen.plugin-menu--open').length > 0
+        );
+    }
+
+    applyMenuResponsive();
+    $(window).on('resize.menuResponsive', applyMenuResponsive);
+
     $(document).on('click', '.plugin-menu__burger', function () {
         $(this).closest('.plugin-menu').toggleClass('plugin-menu--open');
+        syncFullscreenMenuBody();
     });
 
     // Submenu (lista ou mega menu): a setinha abre/fecha. No desktop o hover já abre
@@ -29,12 +82,20 @@ $( document ).ready(function() {
         $(this).closest('.plugin-menu')
             .removeClass('plugin-menu--open')
             .find('.plugin-menu__item').removeClass('is-open');
+        syncFullscreenMenuBody();
     });
 
     // Clicar fora fecha qualquer submenu aberto.
     $(document).on('click', function (e) {
         if (!$(e.target).closest('.plugin-menu').length) {
             $('.plugin-menu__item').removeClass('is-open');
+        }
+    });
+
+    $(document).on('keydown', function (e) {
+        if (e.key === 'Escape') {
+            $('.plugin-menu').removeClass('plugin-menu--open').find('.plugin-menu__item').removeClass('is-open');
+            syncFullscreenMenuBody();
         }
     });
 

@@ -1,6 +1,13 @@
 $(document).ready(function () {
     Editor.init(PAGE_ID, PAGE_DATA);
 
+    $(window).on('resize.editorMenuResponsive', function () {
+        $('.plugin-menu').each(function () {
+            const breakpoint = Math.min(2000, Math.max(320, parseInt($(this).data('menu-breakpoint')) || 767));
+            $(this).toggleClass('plugin-menu--mobile', window.innerWidth <= breakpoint);
+        });
+    });
+
     // Ajusta a altura dos iframes de Header/Footer (preview-only) ao conteúdo real deles.
     $('.previewChrome').on('load', function () {
         try {
@@ -100,7 +107,9 @@ const Editor = {
         else if (mode === 'grid-add-element')      html = this.panelColumn(selected.column);
         else if (mode === 'grid-element')          html = this.panelElement(selected);
         else if (mode === 'grid-column-settings')  html = this.panelGridColumnSettings(selected);
-        else if (mode === 'panels')                html = this.panelPanels(selected);
+        else if (mode === 'panels')                html = (selected.element || {}).plugin_type === 'flutuante'
+                                                        ? this.panelFlutuanteElement(selected.element)
+                                                        : this.panelPanels(selected);
         else if (mode === 'panels-add-element')    html = this.panelPanelsAddElement(selected);
         else if (mode === 'panels-element')        html = this.panelElement(selected);
         $('#editorPanel').html(html);
@@ -521,6 +530,10 @@ const Editor = {
             <button class="pluginBtn" data-plugin="accordion" data-column-id="${columnId}">
                 <span class="pluginBtn__icon">≡</span>
                 <span class="pluginBtn__label">Sanfona</span>
+            </button>
+            <button class="pluginBtn" data-plugin="flutuante" data-column-id="${columnId}">
+                <span class="pluginBtn__icon">✥</span>
+                <span class="pluginBtn__label">Bloco flutuante</span>
             </button>`;
         }
         return html;
@@ -700,6 +713,11 @@ const Editor = {
                         <div class="panelField">
                             <label>Tamanho da fonte (px)</label>
                             <input type="number" class="input" id="textFontSizeInput" min="12" max="80" value="${c.font_size || ''}" placeholder="Ex: 16">
+                        </div>
+                        <div class="panelField">
+                            <label>Tamanho mínimo no celular (px)</label>
+                            <input type="number" class="input" id="textFontSizeMin" min="8" max="80" value="${c.font_size_min || ''}" placeholder="automático">
+                            <p class="panelNote">Deixe vazio: o texto encolhe sozinho até 65% do tamanho.</p>
                         </div>
 
                         <div class="panelDivider"></div>
@@ -1019,6 +1037,29 @@ const Editor = {
                         </div>
 
                         <div class="panelDivider"></div>
+                        <h4>Menu responsivo</h4>
+                        <div class="panelField">
+                            <label>Virar hambúrguer até (px)</label>
+                            <input type="number" class="input" id="menuMobileBreakpoint" min="320" max="2000" value="${parseInt(settings.mobile_breakpoint) || 767}">
+                            <p class="panelNote">Exemplo: 991 transforma o menu em hambúrguer em telas de até 991px.</p>
+                        </div>
+                        <div class="panelField">
+                            <label>Posição do hambúrguer</label>
+                            <select class="input" id="menuMobileAlign">
+                                <option value="left" ${settings.mobile_align === 'left' ? 'selected' : ''}>Esquerda</option>
+                                <option value="center" ${settings.mobile_align === 'center' ? 'selected' : ''}>Centro</option>
+                                <option value="right" ${(settings.mobile_align || 'right') === 'right' ? 'selected' : ''}>Direita</option>
+                            </select>
+                        </div>
+                        <div class="panelField">
+                            <label>Estilo ao abrir</label>
+                            <select class="input" id="menuMobileStyle">
+                                <option value="dropdown" ${(settings.mobile_style || 'dropdown') === 'dropdown' ? 'selected' : ''}>Lista abaixo do botão</option>
+                                <option value="fullscreen" ${settings.mobile_style === 'fullscreen' ? 'selected' : ''}>Tela inteira</option>
+                            </select>
+                        </div>
+
+                        <div class="panelDivider"></div>
                         <div class="panelField">
                             <label>Cor do texto</label>
                             <div class="colorRow">
@@ -1194,6 +1235,10 @@ const Editor = {
             <div class="panelField">
                 <label>Tamanho da fonte (px)</label>
                 <input type="number" class="input" id="${prefix}FontSize" value="${c.font_size || ''}" min="8" max="80" placeholder="padrão do site">
+            </div>
+            <div class="panelField">
+                <label>Tamanho mínimo no celular (px)</label>
+                <input type="number" class="input" id="${prefix}FontSizeMin" value="${c.font_size_min || ''}" min="8" max="80" placeholder="automático">
             </div>
             <div class="panelField panelField--toggle">
                 <label>Negrito</label>
@@ -1396,6 +1441,7 @@ const Editor = {
             target_blank:      $(id('TargetBlank')).is(':checked'),
             align:             $(id('Align')).val() || 'left',
             font_size:         parseInt($(id('FontSize')).val())  || '',
+            font_size_min:     parseInt($(id('FontSizeMin')).val()) || '',
             bold:              $(id('Bold')).is(':checked'),
             // Desmarcar "Usar ícone" limpa a classe — é assim que o render sabe que
             // não há ícone (o PHP e o preview checam a classe, não um booleano).
@@ -1650,6 +1696,7 @@ const Editor = {
     panelGrid(data) {
         const { element } = data;
         const columns = element.content.columns || [];
+        const responsive = element.content.responsive || {};
 
         const colBtns = [1,2,3,4,5,6].map(n =>
             `<button class="colPicker__btn ${columns.length === n ? 'active' : ''}" data-cols="${n}">
@@ -1698,6 +1745,20 @@ const Editor = {
                 </select>
             </div>`).join('');
 
+        const larguraResponsivaSelects = columns.map((col, i) => `
+            <div class="gridWidthRow gridResponsiveWidthRow ${col.hide_responsive ? 'is-hidden' : ''}">
+                <label>Coluna ${i + 1}</label>
+                <select class="input gridResponsiveWidthSelect" data-col-id="${col.id}" ${col.hide_responsive ? 'disabled' : ''}>
+                    ${[1,2,3,4,5,6,7,8,9,10,11,12].map(n =>
+                        `<option value="${n}" ${parseInt(col.responsive_size || 12) === n ? 'selected' : ''}>${n}/12</option>`
+                    ).join('')}
+                </select>
+                <label class="gridResponsiveHide">
+                    <input type="checkbox" class="gridResponsiveHideInput" data-col-id="${col.id}" ${col.hide_responsive ? 'checked' : ''}>
+                    Ocultar
+                </label>
+            </div>`).join('');
+
         return `
             <div class="panelBody">
                 <div class="panelSection">
@@ -1719,6 +1780,26 @@ const Editor = {
                             ${this._textoTotalGrid(total)}
                         </div>
                         <button class="btn btn--success btn--full" id="btnApplyGridWidths">Aplicar larguras</button>
+                    </div>
+
+                    <div class="panelDivider"></div>
+                    <div class="panelField panelField--toggle">
+                        <label>Quebra responsiva personalizada</label>
+                        <input type="checkbox" id="gridResponsiveEnabled" ${responsive.enabled ? 'checked' : ''}>
+                    </div>
+                    <div id="gridResponsiveControls" ${responsive.enabled ? '' : 'style="display:none"'}>
+                        <div class="panelField">
+                            <label>Aplicar estas larguras até (px)</label>
+                            <input type="number" class="input" id="gridResponsiveBreakpoint"
+                                   value="${parseInt(responsive.breakpoint) || 991}" min="320" max="2000">
+                            <p class="panelNote">Acima desta medida, o Grid usa as larguras de desktop.</p>
+                        </div>
+                        <div class="panelField">
+                            <label>Largura de cada coluna</label>
+                            <div class="gridWidths">${larguraResponsivaSelects}</div>
+                            <p class="panelNote">Exemplo: 6/12 + 6/12 + 12/12 forma duas colunas e depois uma coluna inteira.</p>
+                        </div>
+                        <button class="btn btn--success btn--full" id="btnApplyGridResponsive">Aplicar responsivo</button>
                     </div>
 
                     <div class="panelDivider"></div>
@@ -1775,7 +1856,26 @@ const Editor = {
             if (col) col.col_size = Math.min(12, Math.max(1, parseInt($(this).val()) || 1));
         });
 
-        element.content = { ...element.content, columns };
+        $('.gridResponsiveWidthSelect').each(function () {
+            const colId = parseInt($(this).data('col-id'));
+            const col   = columns.find(c => c.id === colId);
+            if (col) col.responsive_size = Math.min(12, Math.max(1, parseInt($(this).val()) || 12));
+        });
+
+        $('.gridResponsiveHideInput').each(function () {
+            const colId = parseInt($(this).data('col-id'));
+            const col   = columns.find(c => c.id === colId);
+            if (col) col.hide_responsive = $(this).is(':checked');
+        });
+
+        element.content = {
+            ...element.content,
+            columns,
+            responsive: {
+                enabled: $('#gridResponsiveEnabled').is(':checked'),
+                breakpoint: Math.min(2000, Math.max(320, parseInt($('#gridResponsiveBreakpoint').val()) || 991)),
+            },
+        };
 
         if (gravar) {
             this.saveGridContent(element);
@@ -1958,7 +2058,7 @@ const Editor = {
         const elements    = column.elements.map(e => this.renderElement(e)).join('');
         const inlineStyle = this._buildInlineStyle(column.styles || {});
         return `
-            <div class="col-${column.col_size} editorColumn ${column.elements.length === 0 ? 'editorColumn--empty' : ''}" data-column-id="${column.id}"${inlineStyle ? ` style="${inlineStyle}"` : ''}>
+            <div class="col-12 col-md-${column.col_size} editorColumn ${column.elements.length === 0 ? 'editorColumn--empty' : ''}" data-column-id="${column.id}"${inlineStyle ? ` style="${inlineStyle}"` : ''}>
                 ${elements}
             </div>`;
     },
@@ -1967,9 +2067,11 @@ const Editor = {
         const c       = element.content || {};
         const preview = element.plugin_type === 'grid'
             ? this.renderGridElement(element)
-            : (['tabs', 'accordion'].includes(element.plugin_type)
-                ? this.renderPanelsElement(element)
-                : this._renderLeafPreviewHtml(element));
+            : element.plugin_type === 'flutuante'
+                ? this._renderFlutuantePreview(element)
+                : (['tabs', 'accordion'].includes(element.plugin_type)
+                    ? this.renderPanelsElement(element)
+                    : this._renderLeafPreviewHtml(element));
         const wrapperStyle = this._elementWrapperStyle(c, element.plugin_type);
 
         return `
@@ -2080,7 +2182,7 @@ const Editor = {
 
     _buildCardTextStyle(text) {
         let css = '';
-        if (text.font_size) css += `font-size:${parseInt(text.font_size)}px;`;
+        if (text.font_size) css += `font-size:${this._fluidFont(text.font_size, text.font_size_min)};`;
         if (text.color)     css += `color:${text.color};`;
         css += `text-align:${['left','center','right'].includes(text.align) ? text.align : 'left'};`;
         if (text.bold)      css += 'font-weight:700;';
@@ -2118,9 +2220,14 @@ const Editor = {
             return li + '</li>';
         }).join('');
 
-        const styleAttr = this._buildMenuStyleAttr(c.settings || {});
+        const settings = c.settings || {};
+        const styleAttr = this._buildMenuStyleAttr(settings);
+        const breakpoint = Math.min(2000, Math.max(320, parseInt(settings.mobile_breakpoint) || 767));
+        const mobileClass = window.innerWidth <= breakpoint ? ' plugin-menu--mobile' : '';
+        const mobileStyle = settings.mobile_style === 'fullscreen' ? 'fullscreen' : 'dropdown';
+        const burgerAlign = ['left', 'center', 'right'].includes(settings.mobile_align) ? settings.mobile_align : 'right';
 
-        return `<nav class="plugin-menu"${styleAttr}>
+        return `<nav class="plugin-menu plugin-menu--mobile-${mobileStyle} plugin-menu--burger-${burgerAlign}${mobileClass}" data-menu-breakpoint="${breakpoint}"${styleAttr}>
             <button type="button" class="plugin-menu__burger"><span></span><span></span><span></span></button>
             <ul class="plugin-menu__list">${itemsHtml}</ul>
         </nav>`;
@@ -2128,18 +2235,20 @@ const Editor = {
 
     _buildMenuStyleAttr(s) {
         const align = ['left', 'center', 'right'].includes(s.align) ? s.align : 'left';
+        const mobileAlign = { left: 'flex-start', center: 'center', right: 'flex-end' }[s.mobile_align] || 'flex-end';
         const vars  = {
             '--menu-align':    align,
             '--menu-gap':      `${Math.max(0, parseInt(s.gap) || 24)}px`,
             '--menu-color':    s.text_color   || '#222222',
             '--menu-hover':    s.hover_color  || '#ae272c',
-            '--menu-fontsize': `${Math.max(10, parseInt(s.font_size) || 16)}px`,
+            '--menu-fontsize': this._fluidFont(Math.max(10, parseInt(s.font_size) || 16)),
             '--menu-burger':   s.burger_color || '#222222',
+            '--menu-mobile-align': mobileAlign,
             '--submenu-bg':       s.sub_bg      || '#ffffff',
             '--submenu-color':    s.sub_color   || '#222222',
             '--submenu-hover':    s.sub_hover   || '#ae272c',
             '--submenu-hover-bg': s.sub_hover_bg || 'transparent',
-            '--submenu-fontsize': `${Math.max(10, parseInt(s.sub_font_size) || 15)}px`,
+            '--submenu-fontsize': this._fluidFont(Math.max(10, parseInt(s.sub_font_size) || 15)),
             '--submenu-radius':   `${Math.max(0, s.sub_radius !== undefined ? parseInt(s.sub_radius) || 0 : 6)}px`,
             '--submenu-padding':  `${Math.max(0, s.sub_padding !== undefined ? parseInt(s.sub_padding) || 0 : 16)}px`,
             '--submenu-border':   (parseInt(s.sub_border_width) || 0) > 0
@@ -2180,7 +2289,7 @@ const Editor = {
 
     _buildButtonGeometryStyle(c) {
         let css = '';
-        if (c.font_size)    css += `font-size:${parseInt(c.font_size)}px;`;
+        if (c.font_size)    css += `font-size:${this._fluidFont(c.font_size, c.font_size_min)};`;
         if (c.bold)         css += 'font-weight:700;';
         if ((c.icon || '').trim()) css += `gap:${Math.max(0, parseInt(c.icon_gap) || 0)}px;`;
         if (c.width_value)  css += `width:${c.width_value}${c.width_unit || 'px'};`;
@@ -2259,6 +2368,20 @@ const Editor = {
         return [(num >> 16) & 255, (num >> 8) & 255, num & 255];
     },
 
+    // Espelha fluidFontSize() de core/Helpers.php: tamanho que encolhe sozinho em
+    // telas menores. Sem mínimo configurado, usa 65% do tamanho (piso de 12px).
+    _fluidFont(px, minPx) {
+        const max = Math.max(1, parseInt(px) || 0);
+        const min = parseInt(minPx) || Math.max(12, Math.round(max * 0.65));
+        if (min >= max) return `${max}px`;
+
+        const telaMin = 360, telaMax = 1280;
+        const inclinacao  = (max - min) / (telaMax - telaMin);
+        const interseccao = min - inclinacao * telaMin;
+
+        return `clamp(${min}px, ${Math.round(interseccao * 100) / 100}px + ${Math.round(inclinacao * 1000000) / 10000}vw, ${max}px)`;
+    },
+
     _normalizeColor(hexVal, fallbackVal) {
         let v = (hexVal || '').trim();
         if (v && !v.startsWith('#')) v = '#' + v;
@@ -2296,14 +2419,31 @@ const Editor = {
             return '<em class="previewEmpty">Grid vazio</em>';
         }
         const cols = columns.map(col => this.renderGridColumn(col, element.id)).join('');
-        return `<div class="editorGrid"><div class="row editorGridRow">${cols}</div></div>`;
+        const responsive = element.content.responsive || {};
+        const token = `editorGridResponsive${String(element.id).replace(/[^a-zA-Z0-9]/g, 'x')}`;
+        let responsiveCss = '';
+
+        if (responsive.enabled) {
+            const breakpoint = Math.min(2000, Math.max(320, parseInt(responsive.breakpoint) || 991));
+            const rules = columns.map((col, i) => {
+                if (col.hide_responsive) {
+                    return `.${token}>.editorGridRow>.editorGridColumn:nth-child(${i + 1}){display:none!important;}`;
+                }
+                const size = Math.min(12, Math.max(1, parseInt(col.responsive_size) || 12));
+                const pct = (size / 12 * 100).toFixed(6);
+                return `.${token}>.editorGridRow>.editorGridColumn:nth-child(${i + 1}){flex:0 0 ${pct}%;max-width:${pct}%;}`;
+            }).join('');
+            responsiveCss = `<style>@media(max-width:${breakpoint}px){${rules}}</style>`;
+        }
+
+        return `${responsiveCss}<div class="editorGrid ${token}"><div class="row editorGridRow">${cols}</div></div>`;
     },
 
     renderGridColumn(col, gridId) {
         const elements    = (col.elements || []).map(e => this.renderGridLeafElement(e, gridId, col.id)).join('');
         const inlineStyle = this._buildInlineStyle(col.styles || {});
         return `
-            <div class="col-${col.col_size} editorGridColumn ${elements ? '' : 'editorGridColumn--empty'}" data-grid-id="${gridId}" data-grid-col-id="${col.id}"${inlineStyle ? ` style="${inlineStyle}"` : ''}>
+            <div class="col-12 col-md-${col.col_size} editorGridColumn ${elements ? '' : 'editorGridColumn--empty'}" data-grid-id="${gridId}" data-grid-col-id="${col.id}"${inlineStyle ? ` style="${inlineStyle}"` : ''}>
                 ${elements}
             </div>`;
     },
@@ -2324,7 +2464,7 @@ const Editor = {
         if (pluginType !== 'text') return '';
 
         let css = '';
-        if (content.font_size)  css += `font-size:${content.font_size}px;`;
+        if (content.font_size)  css += `font-size:${this._fluidFont(content.font_size, content.font_size_min)};`;
         if (content.text_color) css += `color:${content.text_color};`;
         const m = content.margin || {};
         if (m.top || m.right || m.bottom || m.left)
@@ -2401,7 +2541,13 @@ const Editor = {
         if (textColor && !textColor.startsWith('#')) textColor = '#' + textColor;
         if (!/^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(textColor)) textColor = '';
 
-        return { ...c, font_size: fontSize, text_color: textColor, margin };
+        return {
+            ...c,
+            font_size: fontSize,
+            font_size_min: parseInt($('#textFontSizeMin').val()) || '',
+            text_color: textColor,
+            margin,
+        };
     },
 
     saveElementStyleFields() {
@@ -2494,6 +2640,9 @@ const Editor = {
             text_color:   this._normalizeColor($('#menuTextColorHex').val(),   $('#menuTextColor').val()),
             hover_color:  this._normalizeColor($('#menuHoverColorHex').val(),  $('#menuHoverColor').val()),
             burger_color: this._normalizeColor($('#menuBurgerColorHex').val(), $('#menuBurgerColor').val()),
+            mobile_breakpoint: Math.min(2000, Math.max(320, parseInt($('#menuMobileBreakpoint').val()) || 767)),
+            mobile_align:      $('#menuMobileAlign').val() || 'right',
+            mobile_style:      $('#menuMobileStyle').val() || 'dropdown',
             // Submenu / mega menu
             sub_font_size:    Math.max(10, parseInt($('#menuSubFontSize').val()) || 15),
             sub_padding:      Math.max(0, parseInt($('#menuSubPadding').val()) || 0),
@@ -2578,6 +2727,359 @@ const Editor = {
     saveButtonElementFields() {
         if (!['element', 'grid-element', 'panels-element'].includes(this.state.mode)) return;
         this._persistElementContent(this._collectButtonFields('btn'));
+    },
+
+    // ── Bloco flutuante (plugin "flutuante") ──────────────────
+    // Reaproveita os modos 'panels-*' para editar o conteúdo de dentro: o bloco tem
+    // um único "item" implícito, e a navegação (descer/voltar/gravar na raiz) já
+    // funciona igual à das Abas/Sanfona.
+    panelFlutuanteElement(element) {
+        const c   = element.content || {};
+        const pos = c.position || {};
+        const box = c.box || {};
+        const st  = box.styles || {};
+        const br  = st.border_radius || {};
+        const sh  = st.shadow || {};
+        const p   = box.padding || {};
+        const item = (c.items || [])[0] || { id: 0, elements: [] };
+
+        const elementosHtml = (item.elements || []).map(el => `
+            <div class="panelsStructureElement gridStructureElement" data-item-id="${item.id}" data-el-id="${el.id}">
+                <span class="structureElement__badge">${this.escHtml(el.plugin_type)}</span>
+                <span class="structureElement__label">${this._elementPreviewLabel(el)}</span>
+            </div>`).join('');
+
+        const flutuando = (pos.mode || 'float') === 'float';
+
+        return `
+            <div class="panelBody">
+                <div class="panelSection">
+                    <h4>Bloco flutuante</h4>
+
+                    <div class="panelField">
+                        <label>Conteúdo</label>
+                        <div class="structureList">
+                            <div class="structureCol">
+                                ${elementosHtml ? `<div class="structureCol__elements">${elementosHtml}</div>` : ''}
+                                <button class="structureCol__add btnPanelsAddElement" data-item-id="${item.id}">+ Novo elemento</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="panelDivider"></div>
+                    <h4>Posição</h4>
+                    <div class="panelField">
+                        <label>Comportamento</label>
+                        <select class="input" id="flutMode">
+                            <option value="float"  ${flutuando ? 'selected' : ''}>Flutuante (por cima do conteúdo)</option>
+                            <option value="normal" ${flutuando ? '' : 'selected'}>Normal (dentro do fluxo)</option>
+                        </select>
+                    </div>
+
+                    <div id="flutPosControls" ${flutuando ? '' : 'style="display:none"'}>
+                        <p class="panelNote">Arraste o bloco no preview ao lado para posicionar, ou ajuste aqui. Os valores são em % da seção, então a posição acompanha o tamanho da tela.</p>
+                        <div class="twoColGrid">
+                            <div class="panelField">
+                                <label>Horizontal (X) %</label>
+                                <input type="number" class="input" id="flutX" value="${pos.x !== undefined ? pos.x : 50}" min="-50" max="150" step="0.5">
+                            </div>
+                            <div class="panelField">
+                                <label>Vertical (Y) %</label>
+                                <input type="number" class="input" id="flutY" value="${pos.y !== undefined ? pos.y : 50}" min="-50" max="150" step="0.5">
+                            </div>
+                        </div>
+                        <div class="twoColGrid">
+                            <div class="panelField">
+                                <label>Âncora horizontal</label>
+                                <select class="input" id="flutAnchorX">
+                                    <option value="start"  ${pos.anchor_x === 'start'  ? 'selected' : ''}>Esquerda do bloco</option>
+                                    <option value="center" ${(pos.anchor_x || 'center') === 'center' ? 'selected' : ''}>Centro do bloco</option>
+                                    <option value="end"    ${pos.anchor_x === 'end'    ? 'selected' : ''}>Direita do bloco</option>
+                                </select>
+                            </div>
+                            <div class="panelField">
+                                <label>Âncora vertical</label>
+                                <select class="input" id="flutAnchorY">
+                                    <option value="start"  ${pos.anchor_y === 'start'  ? 'selected' : ''}>Topo do bloco</option>
+                                    <option value="center" ${(pos.anchor_y || 'center') === 'center' ? 'selected' : ''}>Centro do bloco</option>
+                                    <option value="end"    ${pos.anchor_y === 'end'    ? 'selected' : ''}>Base do bloco</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="panelField">
+                            <label>Camada (z-index)</label>
+                            <input type="number" class="input" id="flutZ" value="${pos.z_index !== undefined ? pos.z_index : 10}" min="0" max="999">
+                            <p class="panelNote">Quanto maior, mais na frente. O menu do topo usa 50–60.</p>
+                        </div>
+
+                        <div class="panelField panelField--toggle">
+                            <label>Posição própria no celular</label>
+                            <input type="checkbox" id="flutMobileOverride" ${pos.mobile_override ? 'checked' : ''}>
+                        </div>
+                        <div id="flutMobileControls" ${pos.mobile_override ? '' : 'style="display:none"'}>
+                            <div class="twoColGrid">
+                                <div class="panelField">
+                                    <label>X no celular %</label>
+                                    <input type="number" class="input" id="flutXMobile" value="${pos.x_mobile !== undefined ? pos.x_mobile : 50}" min="-50" max="150" step="0.5">
+                                </div>
+                                <div class="panelField">
+                                    <label>Y no celular %</label>
+                                    <input type="number" class="input" id="flutYMobile" value="${pos.y_mobile !== undefined ? pos.y_mobile : 50}" min="-50" max="150" step="0.5">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="panelField panelField--toggle">
+                            <label>Esconder no celular</label>
+                            <input type="checkbox" id="flutHideMobile" ${pos.hide_mobile ? 'checked' : ''}>
+                        </div>
+                    </div>
+
+                    <div class="panelDivider"></div>
+                    <h4>Tamanho</h4>
+                    <div class="panelField">
+                        <label>Largura</label>
+                        <div class="dimensionRow">
+                            <input type="number" class="input" id="flutWidthVal" value="${box.width_value || ''}" min="0" placeholder="auto">
+                            <select class="input" id="flutWidthUnit">
+                                <option value="%"  ${(box.width_unit || '%') === '%'  ? 'selected' : ''}>%</option>
+                                <option value="px" ${box.width_unit === 'px' ? 'selected' : ''}>px</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="panelField">
+                        <label>Largura máxima (px)</label>
+                        <input type="number" class="input" id="flutMaxWidth" value="${box.max_width || ''}" min="0" placeholder="sem limite">
+                    </div>
+                    <div class="panelField">
+                        <label>Altura</label>
+                        <div class="dimensionRow">
+                            <input type="number" class="input" id="flutHeightVal" value="${box.height_value || ''}" min="0" placeholder="auto">
+                            <select class="input" id="flutHeightUnit">
+                                <option value="px" ${(box.height_unit || 'px') === 'px' ? 'selected' : ''}>px</option>
+                                <option value="%"  ${box.height_unit === '%'  ? 'selected' : ''}>%</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="panelField">
+                        <label>Espaço interno (px)</label>
+                        <div class="spacingGrid">
+                            <div class="spacingGrid__row">
+                                <div class="spacingGrid__field"><label>↑ Cima</label>
+                                    <input type="number" class="input" id="flutPadTop" value="${p.top !== undefined ? p.top : 24}" min="0"></div>
+                                <div class="spacingGrid__field"><label>↓ Baixo</label>
+                                    <input type="number" class="input" id="flutPadBottom" value="${p.bottom !== undefined ? p.bottom : 24}" min="0"></div>
+                            </div>
+                            <div class="spacingGrid__row">
+                                <div class="spacingGrid__field"><label>← Esq.</label>
+                                    <input type="number" class="input" id="flutPadLeft" value="${p.left !== undefined ? p.left : 24}" min="0"></div>
+                                <div class="spacingGrid__field"><label>→ Dir.</label>
+                                    <input type="number" class="input" id="flutPadRight" value="${p.right !== undefined ? p.right : 24}" min="0"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="panelDivider"></div>
+                    <h4>Aparência</h4>
+                    <div class="panelField">
+                        <label>Cor de fundo</label>
+                        <div class="colorRow">
+                            <input type="checkbox" id="flutUseBg" ${st.bg_color ? 'checked' : ''} />
+                            <input type="color" class="colorInput" id="flutBgColor" value="${st.bg_color || '#ffffff'}" ${st.bg_color ? '' : 'disabled'}>
+                        </div>
+                    </div>
+                    <div class="panelField">
+                        <label>Borda (px)</label>
+                        <div class="borderRow">
+                            <input type="number" class="input borderWidth" id="flutBorderWidth" value="${st.border_width || 0}" min="0" max="50">
+                            <span class="borderUnit">px</span>
+                            <input type="color" class="colorInput" id="flutBorderColor" value="${st.border_color || '#e0e0e0'}" />
+                        </div>
+                    </div>
+                    <div class="panelField">
+                        <label>Arredondamento dos cantos (px)</label>
+                        <div class="spacingGrid">
+                            <div class="spacingGrid__row">
+                                <div class="spacingGrid__field"><label>↖ Sup. Esq.</label>
+                                    <input type="number" class="input" id="flutRadiusTL" value="${br.tl || 0}" min="0"></div>
+                                <div class="spacingGrid__field"><label>↗ Sup. Dir.</label>
+                                    <input type="number" class="input" id="flutRadiusTR" value="${br.tr || 0}" min="0"></div>
+                            </div>
+                            <div class="spacingGrid__row">
+                                <div class="spacingGrid__field"><label>↙ Inf. Esq.</label>
+                                    <input type="number" class="input" id="flutRadiusBL" value="${br.bl || 0}" min="0"></div>
+                                <div class="spacingGrid__field"><label>↘ Inf. Dir.</label>
+                                    <input type="number" class="input" id="flutRadiusBR" value="${br.br || 0}" min="0"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="panelField">
+                        <label>Sombra</label>
+                        <div class="colorRow">
+                            <input type="checkbox" id="flutShadowEnabled" ${sh.enabled ? 'checked' : ''} />
+                            <label for="flutShadowEnabled" class="colorRowLabel">Ativar sombra</label>
+                        </div>
+                    </div>
+                    <div id="flutShadowControls" ${sh.enabled ? '' : 'style="display:none"'}>
+                        <div class="panelField">
+                            <label>Cor da sombra</label>
+                            <div class="colorRow">
+                                <input type="color" class="colorInput" id="flutShadowColor" value="${sh.color || '#000000'}">
+                            </div>
+                        </div>
+                        <div class="twoColGrid">
+                            <div class="panelField">
+                                <label>Tamanho (px)</label>
+                                <input type="number" class="input" id="flutShadowSize" value="${sh.size !== undefined ? sh.size : 24}" min="0">
+                            </div>
+                            <div class="panelField">
+                                <label>Distância (px)</label>
+                                <input type="number" class="input" id="flutShadowDist" value="${sh.distance !== undefined ? sh.distance : 8}" min="0">
+                            </div>
+                        </div>
+                        <div class="twoColGrid">
+                            <div class="panelField">
+                                <label>Ângulo (°)</label>
+                                <input type="number" class="input" id="flutShadowAngle" value="${sh.angle !== undefined ? sh.angle : 0}" min="0" max="360">
+                            </div>
+                            <div class="panelField">
+                                <label>Opacidade (%)</label>
+                                <input type="number" class="input" id="flutShadowOp" value="${sh.opacity !== undefined ? sh.opacity : 18}" min="0" max="100">
+                            </div>
+                        </div>
+                    </div>
+
+                    <button class="btn btn--success btn--full" id="btnApplyFlutuante">Salvar alterações</button>
+
+                    <div class="panelDivider"></div>
+                    <button class="btn btn--danger btn--full" id="btnDeleteElement" data-id="${element.id}">Remover bloco</button>
+                    <div class="panelDivider"></div>
+                    <button class="btn btn--secondary btn--full btnBack">← Voltar</button>
+                </div>
+            </div>`;
+    },
+
+    _collectFlutuanteFields() {
+        const c = this.state.selected.element.content || {};
+
+        return {
+            ...c,
+            position: {
+                mode:            $('#flutMode').val() || 'float',
+                x:               parseFloat($('#flutX').val()) || 0,
+                y:               parseFloat($('#flutY').val()) || 0,
+                anchor_x:        $('#flutAnchorX').val() || 'center',
+                anchor_y:        $('#flutAnchorY').val() || 'center',
+                z_index:         parseInt($('#flutZ').val()) || 0,
+                hide_mobile:     $('#flutHideMobile').is(':checked'),
+                mobile_override: $('#flutMobileOverride').is(':checked'),
+                x_mobile:        parseFloat($('#flutXMobile').val()) || 0,
+                y_mobile:        parseFloat($('#flutYMobile').val()) || 0,
+            },
+            box: {
+                width_value:  parseInt($('#flutWidthVal').val())  || '',
+                width_unit:   $('#flutWidthUnit').val() || '%',
+                max_width:    parseInt($('#flutMaxWidth').val())  || '',
+                height_value: parseInt($('#flutHeightVal').val()) || '',
+                height_unit:  $('#flutHeightUnit').val() || 'px',
+                padding: {
+                    top:    parseInt($('#flutPadTop').val())    || 0,
+                    right:  parseInt($('#flutPadRight').val())  || 0,
+                    bottom: parseInt($('#flutPadBottom').val()) || 0,
+                    left:   parseInt($('#flutPadLeft').val())   || 0,
+                },
+                styles: {
+                    bg_color:     $('#flutUseBg').is(':checked') ? $('#flutBgColor').val() : '',
+                    border_width: parseInt($('#flutBorderWidth').val()) || 0,
+                    border_color: $('#flutBorderColor').val() || '#e0e0e0',
+                    border_radius: {
+                        tl: parseInt($('#flutRadiusTL').val()) || 0,
+                        tr: parseInt($('#flutRadiusTR').val()) || 0,
+                        br: parseInt($('#flutRadiusBR').val()) || 0,
+                        bl: parseInt($('#flutRadiusBL').val()) || 0,
+                    },
+                    shadow: {
+                        enabled:  $('#flutShadowEnabled').is(':checked'),
+                        color:    $('#flutShadowColor').val() || '#000000',
+                        size:     parseInt($('#flutShadowSize').val())  || 0,
+                        distance: parseInt($('#flutShadowDist').val())  || 0,
+                        angle:    parseInt($('#flutShadowAngle').val()) || 0,
+                        opacity:  parseInt($('#flutShadowOp').val())    || 0,
+                    },
+                },
+            },
+        };
+    },
+
+    saveFlutuanteFields() {
+        if (this.state.mode !== 'panels') return;
+        this._persistElementContent(this._collectFlutuanteFields());
+    },
+
+    // Espelha FlutuantePlugin::render().
+    _renderFlutuantePreview(element) {
+        const c    = element.content || {};
+        const item = (c.items || [])[0] || { id: 0, elements: [] };
+        const pos  = c.position || {};
+        const box  = c.box || {};
+
+        const filhos = (item.elements || [])
+            .map(el => this.renderPanelsLeafElement(el, element.id, item.id))
+            .join('');
+
+        const flutuando = (pos.mode || 'float') === 'float';
+        const classes = 'plugin-flutuante'
+            + (flutuando ? '' : ' plugin-flutuante--normal')
+            + (pos.hide_mobile ? ' plugin-flutuante--hide-mobile' : '');
+
+        return `<div class="${classes} editorFlutuante" data-flut-id="${element.id}" style="${this._buildFlutuanteStyle(pos, box)}">
+            <span class="editorFlutuante__handle" title="Arraste para posicionar">✥</span>
+            <div class="plugin-flutuante__inner">${filhos || '<em class="previewEmpty">Bloco vazio — adicione elementos no painel</em>'}</div>
+        </div>`;
+    },
+
+    _buildFlutuanteStyle(pos, box) {
+        const desloca = (a) => a === 'start' ? '0' : a === 'end' ? '-100%' : '-50%';
+        const limita  = (v) => Math.max(-50, Math.min(150, parseFloat(v) || 0));
+
+        let css = '';
+
+        if ((pos.mode || 'float') === 'float') {
+            css += `left:${limita(pos.x !== undefined ? pos.x : 50)}%;`
+                +  `top:${limita(pos.y !== undefined ? pos.y : 50)}%;`
+                +  `transform:translate(${desloca(pos.anchor_x || 'center')},${desloca(pos.anchor_y || 'center')});`
+                +  `z-index:${parseInt(pos.z_index) || 0};`;
+        }
+
+        if (box.width_value)  css += `width:${parseInt(box.width_value)}${box.width_unit || '%'};`;
+        if (box.max_width)    css += `max-width:${parseInt(box.max_width)}px;`;
+        if (box.height_value) css += `height:${parseInt(box.height_value)}${box.height_unit || 'px'};`;
+
+        const p = box.padding || {};
+        if (p.top || p.right || p.bottom || p.left) {
+            css += `padding:${p.top||0}px ${p.right||0}px ${p.bottom||0}px ${p.left||0}px;`;
+        }
+
+        return css + this._buildInlineStyle(box.styles || {});
+    },
+
+    _flutuanteDefaultContent() {
+        return {
+            items: [{ id: this._genLocalId(), title: '', elements: [] }],
+            position: {
+                mode: 'float', x: 50, y: 50, anchor_x: 'center', anchor_y: 'center', z_index: 10,
+                hide_mobile: false, mobile_override: false, x_mobile: 50, y_mobile: 50,
+            },
+            box: {
+                width_value: '', width_unit: '%', max_width: 420,
+                height_value: '', height_unit: 'px',
+                padding: { top: 24, right: 24, bottom: 24, left: 24 },
+                styles: {
+                    bg_color: '#ffffff', border_width: 0, border_color: '#e0e0e0',
+                    border_radius: { tl: 10, tr: 10, br: 10, bl: 10 },
+                    shadow: { enabled: true, color: '#000000', size: 24, distance: 8, angle: 0, opacity: 18 },
+                },
+            },
+        };
     },
 
     // ── Calculadora de impacto (plugin "calculadora") ─────────
@@ -3312,7 +3814,7 @@ const Editor = {
             '--dep-card-radius':  `${Math.max(0, t.card_radius !== undefined ? parseInt(t.card_radius) || 0 : 10)}px`,
             '--dep-card-pad':     `${Math.max(0, t.card_padding !== undefined ? parseInt(t.card_padding) || 0 : 28)}px`,
             '--dep-quote':        t.quote_color  || '#555555',
-            '--dep-quote-size':   `${Math.max(10, parseInt(t.quote_size) || 15)}px`,
+            '--dep-quote-size':   this._fluidFont(Math.max(10, parseInt(t.quote_size) || 15)),
             '--dep-name':         t.name_color   || '#111111',
             '--dep-avatar-bg':    t.avatar_bg    || '#f3d9dc',
             '--dep-avatar-color': t.avatar_color || '#ae272c',
@@ -3769,7 +4271,7 @@ const Editor = {
 
     _cardIconTextStyle(t, tamanhoPadrao, negritoPadrao) {
         const align = ['left', 'center', 'right'].includes(t.align) ? t.align : 'left';
-        let css = `font-size:${Math.max(8, parseInt(t.font_size) || tamanhoPadrao)}px;`
+        let css = `font-size:${this._fluidFont(Math.max(8, parseInt(t.font_size) || tamanhoPadrao), t.font_size_min)};`
                 + `color:${t.color || '#222222'};`
                 + `text-align:${align};`;
         const negrito = ('bold' in t) ? !!t.bold : negritoPadrao;
@@ -4508,6 +5010,7 @@ const Editor = {
     // Um elemento aninhado pode ser um container também — aí o preview dele é o do
     // próprio container, e não o de um plugin simples.
     _renderNestedPreviewHtml(element) {
+        if (element.plugin_type === 'flutuante') return this._renderFlutuantePreview(element);
         if (element.plugin_type === 'grid') return this.renderGridElement(element);
         if (['tabs', 'accordion'].includes(element.plugin_type)) return this.renderPanelsElement(element);
         return this._renderLeafPreviewHtml(element);
@@ -4528,7 +5031,7 @@ const Editor = {
             '--panels-title-bg':     s.title_bg      || '#f2f2f2',
             '--panels-active-color': s.active_color  || '#ffffff',
             '--panels-active-bg':    s.active_bg     || '#ae272c',
-            '--panels-font-size':    `${parseInt(s.font_size) || 16}px`,
+            '--panels-font-size':    this._fluidFont(Math.max(10, parseInt(s.font_size) || 16)),
             '--panels-gap':          `${s.gap !== undefined ? parseInt(s.gap) || 0 : 8}px`,
             '--panels-divider':      s.divider_color || '#e0e0e0',
         };
@@ -4591,7 +5094,9 @@ const Editor = {
     livePreview() {
         if (this.state.mode === 'panels') {
             const { element } = this.state.selected;
-            element.content = { ...element.content, settings: this._collectPanelsSettings() };
+            element.content = element.plugin_type === 'flutuante'
+                ? this._collectFlutuanteFields()
+                : { ...element.content, settings: this._collectPanelsSettings() };
             this.renderPreview();
             return;
         }
@@ -4847,6 +5352,24 @@ const Editor = {
         });
 
         $(document).on('click', '#btnApplyGridWidths', () => E._aplicarLargurasGrid(true));
+
+        $(document).on('change', '#gridResponsiveEnabled', function () {
+            $('#gridResponsiveControls').toggle(this.checked);
+            E._aplicarLargurasGrid(false);
+        });
+
+        $(document).on('change', '#gridResponsiveBreakpoint, .gridResponsiveWidthSelect', function () {
+            E._aplicarLargurasGrid(false);
+        });
+
+        $(document).on('change', '.gridResponsiveHideInput', function () {
+            const $row = $(this).closest('.gridResponsiveWidthRow');
+            $row.toggleClass('is-hidden', this.checked);
+            $row.find('.gridResponsiveWidthSelect').prop('disabled', this.checked);
+            E._aplicarLargurasGrid(false);
+        });
+
+        $(document).on('click', '#btnApplyGridResponsive', () => E._aplicarLargurasGrid(true));
 
         $(document).on('click', '#btnCancelAddSection', () => {
             E.state = { mode: 'default', selected: null, selectedCols: 1 };
@@ -5242,6 +5765,18 @@ const Editor = {
 
         $(document).on('click', '#btnApplyMenuStyle', () => E.saveMenuElementFields());
 
+        // Permite abrir e fechar o menu em tela inteira dentro do próprio preview.
+        $(document).on('click', '#editorCanvas .plugin-menu__burger', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const $menu = $(this).closest('.plugin-menu');
+            $menu.toggleClass('plugin-menu--open');
+            $('body').toggleClass(
+                'plugin-menu-fullscreen-open',
+                $('#editorCanvas .plugin-menu--mobile-fullscreen.plugin-menu--open').length > 0
+            );
+        });
+
         // Campos de botão (elemento Botão e botão do Card): os toggles são por classe +
         // data-prefix, então valem para os dois painéis sem duplicar handler.
         $(document).on('change', '.jsBtnLinkType', function () {
@@ -5361,6 +5896,80 @@ const Editor = {
         });
 
         $(document).on('click', '#btnApplyIconStyle', () => E.saveIconElementFields());
+
+        // ── Bloco flutuante ───────────────────────────────────────
+        $(document).on('click', '#btnApplyFlutuante', () => E.saveFlutuanteFields());
+
+        $(document).on('change', '#flutMode', function () {
+            $('#flutPosControls').toggle($(this).val() === 'float');
+        });
+
+        $(document).on('change', '#flutMobileOverride', function () {
+            $('#flutMobileControls').toggle(this.checked);
+        });
+
+        $(document).on('change', '#flutUseBg', function () {
+            $('#flutBgColor').prop('disabled', !this.checked);
+        });
+
+        $(document).on('change', '#flutShadowEnabled', function () {
+            $('#flutShadowControls').toggle(this.checked);
+        });
+
+        // Arrastar o bloco no canvas para posicionar. A conta é feita em % da seção
+        // que contém o bloco, que é exatamente o que vai para o content — por isso a
+        // posição continua certa quando a tela muda de tamanho.
+        let _flutArraste = null;
+
+        $(document).on('mousedown', '.editorFlutuante__handle', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const $bloco = $(this).closest('.editorFlutuante');
+            const $secao = $bloco.closest('.editorSection');
+            if (!$secao.length) return;
+
+            const achado = E._findAnyElement(parseInt($bloco.data('flut-id')));
+            if (!achado) return;
+
+            _flutArraste = { $bloco, $secao, element: achado.element, root: achado.root };
+            $bloco.addClass('is-dragging');
+        });
+
+        $(document).on('mousemove', function (e) {
+            if (!_flutArraste) return;
+
+            const r = _flutArraste.$secao[0].getBoundingClientRect();
+            if (!r.width || !r.height) return;
+
+            const pos = _flutArraste.element.content.position || {};
+            const x = Math.max(-50, Math.min(150, Math.round(((e.clientX - r.left) / r.width)  * 1000) / 10));
+            const y = Math.max(-50, Math.min(150, Math.round(((e.clientY - r.top)  / r.height) * 1000) / 10));
+
+            _flutArraste.element.content = {
+                ..._flutArraste.element.content,
+                position: { ...pos, x, y },
+            };
+
+            // Move só o bloco enquanto arrasta; redesenhar o canvas inteiro a cada
+            // mousemove perderia o elemento debaixo do cursor.
+            _flutArraste.$bloco.css({ left: x + '%', top: y + '%' });
+        });
+
+        $(document).on('mouseup', function () {
+            if (!_flutArraste) return;
+
+            const { $bloco, element } = _flutArraste;
+            $bloco.removeClass('is-dragging');
+            _flutArraste = null;
+
+            // Atualiza os campos do painel (se ele estiver aberto) e grava.
+            const pos = element.content.position || {};
+            $('#flutX').val(pos.x);
+            $('#flutY').val(pos.y);
+            E.saveElementDirect(E._rootFor(element));
+            E.renderPreview();
+        });
 
         // ── Calculadora ───────────────────────────────────────────
         $(document).on('click', '#btnApplyCalculadora', () => E.saveCalculadoraFields());
@@ -5725,6 +6334,7 @@ const Editor = {
             css += `background-image:url('${styles.bg_image}');`;
             css += `background-repeat:${styles.bg_repeat || 'no-repeat'};`;
             css += `background-position:${styles.bg_position_x || 'center'} ${styles.bg_position_y || 'center'};`;
+            if (styles.bg_size) css += `background-size:${styles.bg_size};`;
         }
         if (styles.width_value)  css += `width:${styles.width_value}${styles.width_unit || 'px'};`;
         if (styles.height_value) css += `height:${styles.height_value}${styles.height_unit || 'px'};`;
@@ -5907,12 +6517,13 @@ const Editor = {
         if (pluginType === 'testimonials') return this._testimonialsDefaultContent();
         if (pluginType === 'calculadora') return this._calculadoraDefaultContent();
         if (pluginType === 'button') return this._buttonDefaultContent();
+        if (pluginType === 'flutuante') return this._flutuanteDefaultContent();
         if (['tabs', 'accordion'].includes(pluginType)) return this._panelsDefaultContent(pluginType);
         if (pluginType === 'grid') {
             return {
                 columns: [
-                    { id: this._genLocalId(), col_size: 6, elements: [] },
-                    { id: this._genLocalId(), col_size: 6, elements: [] },
+                    { id: this._genLocalId(), col_size: 6, responsive_size: 12, hide_responsive: false, elements: [] },
+                    { id: this._genLocalId(), col_size: 6, responsive_size: 12, hide_responsive: false, elements: [] },
                 ],
             };
         }
@@ -6067,11 +6678,13 @@ const Editor = {
             cols[newCount - 1].elements = [...(cols[newCount - 1].elements || []), ...movedElements];
         } else {
             while (cols.length < newCount) {
-                cols.push({ id: this._genLocalId(), col_size: colSize, elements: [] });
+                cols.push({ id: this._genLocalId(), col_size: colSize, responsive_size: 12, hide_responsive: false, elements: [] });
             }
         }
         cols.forEach((c, i) => {
             c.col_size = sizes ? Math.min(12, Math.max(1, sizes[i] || colSize)) : colSize;
+            if (!c.responsive_size) c.responsive_size = 12;
+            if (c.hide_responsive === undefined) c.hide_responsive = false;
         });
 
         gridElement.content.columns = cols;
@@ -6224,7 +6837,7 @@ const Editor = {
 
     _modeForElement(element) {
         if (element.plugin_type === 'grid') return 'grid';
-        if (['tabs', 'accordion'].includes(element.plugin_type)) return 'panels';
+        if (['tabs', 'accordion', 'flutuante'].includes(element.plugin_type)) return 'panels';
         return 'element';
     },
 
@@ -6380,6 +6993,10 @@ const Editor = {
         if (element.plugin_type === 'button') {
             const t = (c.text || '').trim();
             return t ? this.escHtml(t) : 'Botão (sem texto)';
+        }
+        if (element.plugin_type === 'flutuante') {
+            const n = (((c.items || [])[0] || {}).elements || []).length;
+            return `Bloco flutuante (${n})`;
         }
         if (element.plugin_type === 'tabs' || element.plugin_type === 'accordion') {
             const n = (c.items || []).length;

@@ -167,14 +167,14 @@ class CalculadoraPlugin extends PluginBase {
         $s = $this->config['style'] ?? [];
 
         $vars = [
-            '--calc-accent'      => $s['accent']        ?: '#ae272c',
-            '--calc-eyebrow'     => $s['eyebrow_color'] ?: '#ae272c',
-            '--calc-title'       => $s['title_color']   ?: '#111111',
-            '--calc-text'        => $s['text_color']    ?: '#555555',
-            '--calc-panel-bg'    => $s['panel_bg']      ?: '#ffffff',
+            '--calc-accent'      => ($s['accent'] ?? '')        ?: '#ae272c',
+            '--calc-eyebrow'     => ($s['eyebrow_color'] ?? '') ?: '#ae272c',
+            '--calc-title'       => ($s['title_color'] ?? '')   ?: '#111111',
+            '--calc-text'        => ($s['text_color'] ?? '')    ?: '#555555',
+            '--calc-panel-bg'    => ($s['panel_bg'] ?? '')      ?: '#ffffff',
             '--calc-panel-radius' => max(0, (int) ($s['panel_radius'] ?? 14)) . 'px',
             '--calc-panel-pad'   => max(0, (int) ($s['panel_padding'] ?? 28)) . 'px',
-            '--calc-number'      => $s['number_color']  ?: '#111111',
+            '--calc-number'      => ($s['number_color'] ?? '')  ?: '#111111',
             '--calc-gap'         => max(0, (int) ($s['gap'] ?? 32)) . 'px',
             '--calc-panel-shadow' => !empty($s['panel_shadow']) ? '0 8px 30px rgba(0,0,0,0.10)' : 'none',
         ];

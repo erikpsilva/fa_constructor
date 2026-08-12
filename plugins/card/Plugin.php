@@ -78,7 +78,7 @@ class CardPlugin extends PluginBase {
         $css = '';
 
         if (!empty($text['font_size'])) {
-            $css .= 'font-size:' . (int) $text['font_size'] . 'px;';
+            $css .= 'font-size:' . fluidFontSize((int) $text['font_size'], $text['font_size_min'] ?? null) . ';';
         }
 
         $color = $text['color'] ?? '';

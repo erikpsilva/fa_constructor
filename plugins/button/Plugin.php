@@ -69,7 +69,7 @@ class ButtonPlugin extends PluginBase {
         $css = '';
 
         if (!empty($this->config['font_size'])) {
-            $css .= 'font-size:' . (int) $this->config['font_size'] . 'px;';
+            $css .= 'font-size:' . fluidFontSize((int) $this->config['font_size'], $this->config['font_size_min'] ?? null) . ';';
         }
         if (!empty($this->config['bold'])) {
             $css .= 'font-weight:700;';
@@ -148,6 +148,7 @@ class ButtonPlugin extends PluginBase {
             'target_blank'     => false,
             'align'            => 'left',
             'font_size'        => '',
+            'font_size_min'    => '',
             'bold'             => false,
             'icon'             => '',
             'icon_position'    => 'left',

@@ -24,6 +24,13 @@ function ensureTemplateSection(string $type, string $title): array {
 
 $header = ensureTemplateSection('header', 'Header');
 $footer = ensureTemplateSection('footer', 'Footer');
+
+$stickyEnabled = getSetting('header_sticky_enabled', '0') === '1';
+$stickyOffset  = (int) getSetting('header_sticky_offset', '180');
+$stickyScale   = (int) getSetting('header_sticky_scale', '75');
+$stickyBg      = getSetting('header_sticky_bg', '#111111');
+$stickyColor   = getSetting('header_sticky_color', '#ffffff');
+$stickyShadow  = getSetting('header_sticky_shadow', '1') === '1';
 ?>
 <!DOCTYPE html>
 <html>
@@ -65,6 +72,60 @@ $footer = ensureTemplateSection('footer', 'Footer');
                     </div>
                 </div>
             </div>
+
+            <div class="adminHeaderFooter__behavior">
+                <h3>Header fixo e compacto</h3>
+                <p>Fixa o Header no topo depois da rolagem escolhida e reduz todos os elementos proporcionalmente.</p>
+
+                <div class="formGroup">
+                    <div class="formGroup__item formGroup__item--check">
+                        <label class="checkLabel">
+                            <input type="checkbox" id="headerStickyEnabled" <?= $stickyEnabled ? 'checked' : '' ?>>
+                            Ativar Header fixo ao rolar
+                        </label>
+                    </div>
+
+                    <div id="headerStickyControls" <?= $stickyEnabled ? '' : 'style="display:none"' ?>>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="formGroup__item">
+                                    <label>Fixar depois de rolar (px)</label>
+                                    <input class="input" type="number" id="headerStickyOffset" min="0" max="5000" value="<?= $stickyOffset ?>">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="formGroup__item">
+                                    <label>Tamanho compacto (%)</label>
+                                    <input class="input" type="number" id="headerStickyScale" min="50" max="100" value="<?= $stickyScale ?>">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="formGroup__item formGroup__item--check adminHeaderFooter__shadowCheck">
+                                    <label class="checkLabel">
+                                        <input type="checkbox" id="headerStickyShadow" <?= $stickyShadow ? 'checked' : '' ?>>
+                                        Usar sombra
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="formGroup__item">
+                                    <label>Fundo no modo compacto</label>
+                                    <input class="input adminHeaderFooter__color" type="color" id="headerStickyBg" value="<?= e($stickyBg) ?>">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="formGroup__item">
+                                    <label>Cor do menu e hambúrguer</label>
+                                    <input class="input adminHeaderFooter__color" type="color" id="headerStickyColor" value="<?= e($stickyColor) ?>">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="button" class="btn btn--success" id="btnSaveHeaderBehavior">Salvar comportamento</button>
+                    <span class="adminHeaderFooter__saved" id="headerBehaviorSaved"></span>
+                </div>
+            </div>
         </section>
 
     </main>
@@ -72,6 +133,9 @@ $footer = ensureTemplateSection('footer', 'Footer');
 
 <?php include ROOT . '/admin/includes/footer/footer.php'; ?>
 <?php include ROOT . '/admin/includes/scripts.php'; ?>
+
+<script>var ADMIN_BASE_URL = "<?= ADMIN_BASE_URL ?>";</script>
+<script src="<?= ADMIN_BASE_URL ?>/pages/header-footer/header-footer.js?v<?= time() ?>"></script>
 
 </body>
 </html>

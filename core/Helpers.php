@@ -84,6 +84,36 @@ function sanitizeIconClass(string $icon): string {
     return implode(' ', $ok);
 }
 
+// Tamanho de fonte que encolhe sozinho em telas menores.
+//
+// Devolve um clamp(mínimo, fórmula em vw, máximo): o texto usa o tamanho cheio no
+// desktop, encolhe proporcionalmente conforme a tela diminui e para de encolher no
+// mínimo. Quem não configurar nada ganha isso automaticamente — o mínimo padrão é
+// 65% do tamanho (nunca abaixo de 12px), que é o suficiente para um título de 48px
+// não estourar no celular sem ficar ilegível.
+//
+// A fórmula é a interpolação linear entre duas larguras de tela (360px e 1280px):
+// a partir de dois pontos (tela, tamanho), acha-se a reta e escreve-se em vw.
+function fluidFontSize(int $px, $minPx = null): string {
+    $max = max(1, $px);
+    $min = (int) ($minPx ?: max(12, (int) round($max * 0.65)));
+
+    // Mínimo maior ou igual ao máximo = usuário não quer fluidez.
+    if ($min >= $max) {
+        return $max . 'px';
+    }
+
+    $telaMin = 360;
+    $telaMax = 1280;
+
+    $inclinacao  = ($max - $min) / ($telaMax - $telaMin);
+    $interseccao = $min - $inclinacao * $telaMin;
+
+    return 'clamp(' . $min . 'px, '
+         . round($interseccao, 2) . 'px + ' . round($inclinacao * 100, 4) . 'vw, '
+         . $max . 'px)';
+}
+
 function buildInlineStyles(array $st): string {
     $css = '';
     if (!empty($st['bg_color']))     $css .= 'background-color:' . $st['bg_color'] . ';';
@@ -91,6 +121,7 @@ function buildInlineStyles(array $st): string {
         $css .= "background-image:url('" . $st['bg_image'] . "');";
         $css .= 'background-repeat:' . ($st['bg_repeat'] ?? 'no-repeat') . ';';
         $css .= 'background-position:' . ($st['bg_position_x'] ?? 'center') . ' ' . ($st['bg_position_y'] ?? 'center') . ';';
+        if (!empty($st['bg_size'])) $css .= 'background-size:' . $st['bg_size'] . ';';
     }
     if (!empty($st['width_value']))  $css .= 'width:'  . $st['width_value']  . ($st['width_unit']  ?? 'px') . ';';
     if (!empty($st['height_value'])) $css .= 'height:' . $st['height_value'] . ($st['height_unit'] ?? 'px') . ';';
@@ -270,7 +301,9 @@ function renderSections(array $sections): string {
         $colsHtml = '';
         foreach ($section['columns'] as $column) {
             $colStyle  = buildInlineStyles($column['styles'] ?? []);
-            $colsHtml .= '<div class="col-' . $column['col_size'] . '"'
+            // A divisão configurada vale a partir do breakpoint md. Em telas
+            // menores, cada coluna ocupa a linha inteira automaticamente.
+            $colsHtml .= '<div class="col-12 col-md-' . $column['col_size'] . '"'
                        . ($colStyle ? ' style="' . e($colStyle) . '"' : '') . '>';
             foreach ($column['elements'] as $element) {
                 $colsHtml .= renderPluginElement($element);
