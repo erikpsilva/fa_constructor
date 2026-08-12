@@ -10,4 +10,5 @@
 <?php
 $version = time();
 echo '<link rel="stylesheet" type="text/css" href="' . BASE_URL . '/styles/style.min.css?v' . $version . '">';
+echo fontAwesomeTag();
 ?>

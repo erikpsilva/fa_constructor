@@ -10,8 +10,13 @@ class ButtonPlugin extends PluginBase {
             return '';
         }
 
-        $align = in_array($this->config['align'] ?? 'left', ['left', 'center', 'right'], true)
-            ? $this->config['align'] : 'left';
+        // ?? resolvido antes do in_array — ler $this->config['align'] no ramo verdadeiro
+        // avisaria "Undefined array key" quando o botão vem de um content parcial
+        // (é o caso do botão dentro do Card, que não passa pelo merge de defaults).
+        $align = $this->config['align'] ?? 'left';
+        if (!in_array($align, ['left', 'center', 'right'], true)) {
+            $align = 'left';
+        }
 
         $url       = $this->resolveUrl();
         $target    = !empty($this->config['target_blank']) ? ' target="_blank" rel="noopener"' : '';
@@ -19,9 +24,26 @@ class ButtonPlugin extends PluginBase {
         $geometry  = $this->buildGeometryStyle();
         $colorVars = $this->buildColorVarsAttr();
 
+        // O ícone entra dentro do próprio <a>, que já é inline-flex — a posição
+        // (antes/depois do texto) é só a ordem no HTML, e o espaço entre os dois vem
+        // do `gap` montado em buildGeometryStyle().
+        $icone = sanitizeIconClass($this->config['icon'] ?? '');
+        $conteudo = $label;
+
+        if ($icone !== '') {
+            $tamanho  = (int) ($this->config['icon_size'] ?? 0);
+            $iconHtml = '<i class="' . htmlspecialchars($icone, ENT_QUOTES, 'UTF-8') . '"'
+                      . ($tamanho > 0 ? ' style="font-size:' . $tamanho . 'px;"' : '')
+                      . ' aria-hidden="true"></i>';
+
+            $conteudo = ($this->config['icon_position'] ?? 'left') === 'right'
+                ? $label . $iconHtml
+                : $iconHtml . $label;
+        }
+
         return '<div class="plugin-button plugin-button--' . $align . '"' . $colorVars . '>'
              . '<a class="plugin-button__link" href="' . htmlspecialchars($url, ENT_QUOTES, 'UTF-8') . '"' . $target
-             . ($geometry ? ' style="' . $geometry . '"' : '') . '>' . $label . '</a>'
+             . ($geometry ? ' style="' . $geometry . '"' : '') . '>' . $conteudo . '</a>'
              . '</div>';
     }
 
@@ -46,6 +68,16 @@ class ButtonPlugin extends PluginBase {
     private function buildGeometryStyle(): string {
         $css = '';
 
+        if (!empty($this->config['font_size'])) {
+            $css .= 'font-size:' . (int) $this->config['font_size'] . 'px;';
+        }
+        if (!empty($this->config['bold'])) {
+            $css .= 'font-weight:700;';
+        }
+        // Espaço entre ícone e texto — só faz sentido quando há ícone.
+        if (sanitizeIconClass($this->config['icon'] ?? '') !== '') {
+            $css .= 'gap:' . max(0, (int) ($this->config['icon_gap'] ?? 8)) . 'px;';
+        }
         if (!empty($this->config['width_value'])) {
             $css .= 'width:' . (int) $this->config['width_value'] . ($this->config['width_unit'] ?? 'px') . ';';
         }
@@ -115,6 +147,12 @@ class ButtonPlugin extends PluginBase {
             'url'              => '',
             'target_blank'     => false,
             'align'            => 'left',
+            'font_size'        => '',
+            'bold'             => false,
+            'icon'             => '',
+            'icon_position'    => 'left',
+            'icon_gap'         => 8,
+            'icon_size'        => '',
             'width_value'      => '',
             'width_unit'       => 'px',
             'height_value'     => '',

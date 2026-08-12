@@ -12,22 +12,77 @@ class MenuPlugin extends PluginBase {
 
         $itemsHtml = '';
         foreach ($items as $item) {
-            $url    = $this->resolveItemUrl($item);
-            $label  = htmlspecialchars($item['label'] ?? '', ENT_QUOTES, 'UTF-8');
-            $target = !empty($item['target_blank']) ? ' target="_blank" rel="noopener"' : '';
-            $itemsHtml .= '<li class="plugin-menu__item"><a href="' . htmlspecialchars($url, ENT_QUOTES, 'UTF-8') . '"' . $target . '>' . $label . '</a></li>';
+            $itemsHtml .= $this->renderItem($item);
         }
 
         if ($itemsHtml === '') {
             return '';
         }
 
-        $styleAttr = $this->buildStyleAttr();
-
-        return '<nav class="plugin-menu"' . $styleAttr . '>'
+        return '<nav class="plugin-menu"' . $this->buildStyleAttr() . '>'
              . '<button type="button" class="plugin-menu__burger" aria-label="Abrir menu"><span></span><span></span><span></span></button>'
              . '<ul class="plugin-menu__list">' . $itemsHtml . '</ul>'
              . '</nav>';
+    }
+
+    private function renderItem(array $item): string {
+        $filhos  = $this->submenuChildren($item);
+        $tipo    = $filhos ? ($item['submenu'] ?? 'dropdown') : 'none';
+        // O modificador --dropdown/--mega define onde o painel ancora (no item ou no
+        // <nav>), então precisa estar no <li> — CSS não consegue olhar o filho.
+        $classes = 'plugin-menu__item'
+                 . ($filhos ? ' plugin-menu__item--has-sub plugin-menu__item--' . ($tipo === 'mega' ? 'mega' : 'dropdown') : '');
+
+        $html = '<li class="' . $classes . '">'
+              . '<div class="plugin-menu__itemTop">'
+              . $this->renderLink($item, 'plugin-menu__link');
+
+        if ($filhos) {
+            // Botão próprio para abrir/fechar no mobile — no desktop o submenu abre no
+            // hover, mas no toque não existe hover, então precisa de algo clicável que
+            // não seja o link (senão navegaria antes de mostrar os subitens).
+            $html .= '<button type="button" class="plugin-menu__caret" aria-label="Abrir submenu"></button>';
+        }
+
+        $html .= '</div>';
+
+        if ($filhos) {
+            $cols = max(1, min(4, (int) ($item['mega_columns'] ?? 3)));
+            $sub  = '<div class="plugin-menu__sub plugin-menu__sub--' . ($tipo === 'mega' ? 'mega' : 'dropdown') . '"'
+                  . ($tipo === 'mega' ? ' style="--menu-mega-cols:' . $cols . ';"' : '') . '>'
+                  . '<ul class="plugin-menu__sublist">';
+
+            foreach ($filhos as $filho) {
+                $sub .= '<li class="plugin-menu__subitem">'
+                      . $this->renderLink($filho, 'plugin-menu__sublink')
+                      . '</li>';
+            }
+
+            $html .= $sub . '</ul></div>';
+        }
+
+        return $html . '</li>';
+    }
+
+    // Só considera subitens que tenham algum texto — um subitem em branco criado sem
+    // querer no editor não deve fazer o item virar um submenu.
+    private function submenuChildren(array $item): array {
+        if (($item['submenu'] ?? 'none') === 'none') {
+            return [];
+        }
+
+        return array_values(array_filter(
+            $item['children'] ?? [],
+            fn($f) => trim($f['label'] ?? '') !== ''
+        ));
+    }
+
+    private function renderLink(array $item, string $class): string {
+        $url    = $this->resolveItemUrl($item);
+        $label  = htmlspecialchars($item['label'] ?? '', ENT_QUOTES, 'UTF-8');
+        $target = !empty($item['target_blank']) ? ' target="_blank" rel="noopener"' : '';
+
+        return '<a class="' . $class . '" href="' . htmlspecialchars($url, ENT_QUOTES, 'UTF-8') . '"' . $target . '>' . $label . '</a>';
     }
 
     // Nunca retorna vazio/nulo — um item sem link configurado ainda assim aparece
@@ -60,6 +115,18 @@ class MenuPlugin extends PluginBase {
             '--menu-hover'     => $s['hover_color'] ?: '#ae272c',
             '--menu-fontsize'  => max(10, (int) ($s['font_size'] ?? 16)) . 'px',
             '--menu-burger'    => $s['burger_color'] ?: '#222222',
+            // Submenu (dropdown e mega menu)
+            '--submenu-bg'       => $s['sub_bg']        ?: '#ffffff',
+            '--submenu-color'    => $s['sub_color']     ?: '#222222',
+            '--submenu-hover'    => $s['sub_hover']     ?: '#ae272c',
+            '--submenu-hover-bg' => $s['sub_hover_bg']  ?: 'transparent',
+            '--submenu-fontsize' => max(10, (int) ($s['sub_font_size'] ?? 15)) . 'px',
+            '--submenu-radius'   => max(0, (int) ($s['sub_radius']  ?? 6)) . 'px',
+            '--submenu-padding'  => max(0, (int) ($s['sub_padding'] ?? 16)) . 'px',
+            '--submenu-border'   => ($s['sub_border_width'] ?? 0) > 0
+                ? (int) $s['sub_border_width'] . 'px solid ' . ($s['sub_border_color'] ?: '#e0e0e0')
+                : 'none',
+            '--submenu-shadow'   => !empty($s['sub_shadow']) ? '0 8px 24px rgba(0,0,0,0.14)' : 'none',
         ];
 
         $css = '';
@@ -74,12 +141,22 @@ class MenuPlugin extends PluginBase {
         return [
             'items'    => [],
             'settings' => [
-                'align'        => 'left',
-                'gap'          => 24,
-                'text_color'   => '#222222',
-                'hover_color'  => '#ae272c',
-                'font_size'    => 16,
-                'burger_color' => '#222222',
+                'align'            => 'left',
+                'gap'              => 24,
+                'text_color'       => '#222222',
+                'hover_color'      => '#ae272c',
+                'font_size'        => 16,
+                'burger_color'     => '#222222',
+                'sub_bg'           => '#ffffff',
+                'sub_color'        => '#222222',
+                'sub_hover'        => '#ae272c',
+                'sub_hover_bg'     => '',
+                'sub_font_size'    => 15,
+                'sub_radius'       => 6,
+                'sub_padding'      => 16,
+                'sub_border_width' => 0,
+                'sub_border_color' => '#e0e0e0',
+                'sub_shadow'       => true,
             ],
         ];
     }

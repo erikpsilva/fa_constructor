@@ -10,6 +10,7 @@ $version  = time();
     <title><?= e($page['title']) ?><?= $siteName ? ' - ' . e($siteName) : '' ?></title>
     <link rel="icon" href="<?= asset('images/favicon.png') ?>" type="image/x-icon" />
     <link rel="stylesheet" href="<?= asset('styles/style.min.css') ?>?v=<?= $version ?>">
+    <?= fontAwesomeTag() ?>
 </head>
 <body>
 

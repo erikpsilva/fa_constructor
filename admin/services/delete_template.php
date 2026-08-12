@@ -23,22 +23,22 @@ $id = (int) ($_POST['id'] ?? 0);
 
 if ($id <= 0) {
     http_response_code(400);
-    echo json_encode(['success' => false, 'message' => 'Página inválida.']);
+    echo json_encode(['success' => false, 'message' => 'Modelo inválido.']);
     exit;
 }
 
 require_once dirname(__FILE__, 3) . '/config/database.php';
 $pdo = getDbConnection();
 
-// O `AND type = 'page'` protege Header/Footer e modelos, que têm telas e endpoints
-// próprios e nunca devem ser apagados pela lista de páginas.
-$stmt = $pdo->prepare("DELETE FROM pages WHERE id = ? AND type = 'page'");
+// O `AND type = 'template'` impede que este endpoint apague uma página real por engano.
+// As seções/colunas/elementos somem junto via ON DELETE CASCADE.
+$stmt = $pdo->prepare("DELETE FROM pages WHERE id = ? AND type = 'template'");
 $stmt->execute([$id]);
 
 if ($stmt->rowCount() === 0) {
     http_response_code(404);
-    echo json_encode(['success' => false, 'message' => 'Página não encontrada.']);
+    echo json_encode(['success' => false, 'message' => 'Modelo não encontrado.']);
     exit;
 }
 
-echo json_encode(['success' => true, 'message' => 'Página excluída com sucesso.']);
+echo json_encode(['success' => true, 'message' => 'Modelo excluído com sucesso.']);

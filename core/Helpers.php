@@ -49,6 +49,41 @@ function jsonResponse(bool $success, string $message, array $data = []): void {
     exit;
 }
 
+// Tag que carrega o Font Awesome. Por padrão usa o CDN do pacote Free (não exige
+// conta nem kit). Se a setting `fontawesome_kit` estiver preenchida com o código do
+// kit (ex: "a1b2c3d4e5") ou com a URL completa do kit, usa o kit no lugar — é só
+// gravar essa setting para trocar, sem mexer em código.
+function fontAwesomeTag(): string {
+    $kit = trim(getSetting('fontawesome_kit', ''));
+
+    if ($kit !== '') {
+        $url = str_starts_with($kit, 'http')
+            ? $kit
+            : 'https://kit.fontawesome.com/' . $kit . '.js';
+
+        return '<script src="' . e($url) . '" crossorigin="anonymous"></script>';
+    }
+
+    return '<link rel="stylesheet" href="' . FONTAWESOME_CDN . '">';
+}
+
+// Filtra uma classe de ícone do Font Awesome. Os campos de classe do editor são
+// livres, então cada pedaço só passa se tiver a cara de uma classe do FA — sem isso
+// dava para injetar atributo/classe arbitrária no HTML da página.
+// Usada pelo plugin de Ícone e pelo ícone dentro do Botão.
+function sanitizeIconClass(string $icon): string {
+    $partes = preg_split('/\s+/', trim($icon), -1, PREG_SPLIT_NO_EMPTY) ?: [];
+    $ok     = [];
+
+    foreach ($partes as $parte) {
+        if (preg_match('/^fa[a-z]?(-[a-z0-9]+)*$/i', $parte)) {
+            $ok[] = strtolower($parte);
+        }
+    }
+
+    return implode(' ', $ok);
+}
+
 function buildInlineStyles(array $st): string {
     $css = '';
     if (!empty($st['bg_color']))     $css .= 'background-color:' . $st['bg_color'] . ';';
@@ -152,6 +187,75 @@ function loadPageSectionsTree(int $pageId): array {
     unset($section);
 
     return $sections;
+}
+
+// Copia toda a árvore (seções → colunas → elementos) de uma página para outra.
+// Usado nos dois sentidos: salvar uma página como modelo e criar uma página a partir
+// de um modelo — é a mesma operação, só mudam a origem e o destino.
+//
+// O JSON de content é copiado cru, sem decodificar: os IDs sintéticos dos elementos
+// aninhados (colunas de Grid, imagens de Slider, itens de Menu) só existem dentro do
+// próprio JSON, não são linhas do banco, então não precisam ser remapeados.
+function clonePageTree(int $fromPageId, int $toPageId): void {
+    $sections = Database::fetchAll(
+        "SELECT * FROM page_sections WHERE page_id = ? ORDER BY sort_order ASC",
+        [$fromPageId]
+    );
+
+    foreach ($sections as $section) {
+        $newSectionId = (int) Database::insert(
+            "INSERT INTO page_sections (page_id, name, sort_order, container_type, styles)
+             VALUES (?, ?, ?, ?, ?)",
+            [
+                $toPageId,
+                $section['name'],
+                $section['sort_order'],
+                $section['container_type'],
+                $section['styles'],
+            ]
+        );
+
+        $columns = Database::fetchAll(
+            "SELECT * FROM section_columns WHERE section_id = ? ORDER BY sort_order ASC",
+            [(int) $section['id']]
+        );
+
+        foreach ($columns as $column) {
+            $newColumnId = (int) Database::insert(
+                "INSERT INTO section_columns (section_id, col_size, sort_order, styles)
+                 VALUES (?, ?, ?, ?)",
+                [$newSectionId, $column['col_size'], $column['sort_order'], $column['styles']]
+            );
+
+            $elements = Database::fetchAll(
+                "SELECT * FROM column_elements WHERE column_id = ? ORDER BY sort_order ASC",
+                [(int) $column['id']]
+            );
+
+            foreach ($elements as $element) {
+                Database::insert(
+                    "INSERT INTO column_elements (column_id, plugin_type, content, sort_order)
+                     VALUES (?, ?, ?, ?)",
+                    [$newColumnId, $element['plugin_type'], $element['content'], $element['sort_order']]
+                );
+            }
+        }
+    }
+}
+
+// Gera um slug único para a tabela pages (que tem UNIQUE em slug). Usado pelos
+// modelos, que precisam de um slug mesmo nunca sendo acessíveis publicamente.
+function uniquePageSlug(string $base): string {
+    $base = preg_replace('/[^a-z0-9\-]/', '', strtolower($base)) ?: 'modelo';
+    $slug = $base;
+    $i    = 2;
+
+    while (Database::fetch("SELECT id FROM pages WHERE slug = ? LIMIT 1", [$slug])) {
+        $slug = $base . '-' . $i;
+        $i++;
+    }
+
+    return $slug;
 }
 
 // Renderiza a lista de seções (vindas de loadPageSectionsTree) em HTML.

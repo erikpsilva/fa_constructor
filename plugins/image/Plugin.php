@@ -32,7 +32,24 @@ class ImagePlugin extends PluginBase {
             $img = '<a href="' . htmlspecialchars($link, ENT_QUOTES, 'UTF-8') . '">' . $img . '</a>';
         }
 
-        return '<div class="plugin-image plugin-image--' . $align . '">' . $img . '</div>';
+        // A margem vai no wrapper, e não na <img>: é ele que ocupa a largura da coluna
+        // e faz o alinhamento, então é dele que o espaçamento externo tem que sair.
+        $wrapperStyle = $this->buildMarginStyle();
+
+        return '<div class="plugin-image plugin-image--' . $align . '"'
+             . ($wrapperStyle ? ' style="' . $wrapperStyle . '"' : '') . '>' . $img . '</div>';
+    }
+
+    private function buildMarginStyle(): string {
+        $m = $this->config['margin'] ?? [];
+        if (empty($m['top']) && empty($m['right']) && empty($m['bottom']) && empty($m['left'])) {
+            return '';
+        }
+
+        return sprintf(
+            'margin:%dpx %dpx %dpx %dpx;',
+            $m['top'] ?? 0, $m['right'] ?? 0, $m['bottom'] ?? 0, $m['left'] ?? 0
+        );
     }
 
     public function getDefaultConfig(): array {
@@ -44,6 +61,7 @@ class ImagePlugin extends PluginBase {
             'width_value'   => '',
             'width_unit'    => '%',
             'border_radius' => 0,
+            'margin'        => ['top' => 0, 'right' => 0, 'bottom' => 0, 'left' => 0],
         ];
     }
 

@@ -1,0 +1,31 @@
+// ── Seção modelos (páginas salvas para reaproveitar) ──────────
+.adminModelos {
+    h2 { margin-bottom: 10px; }
+
+    &__hint {
+        color: lighten(@colorFont, 20%);
+        margin-bottom: 25px;
+        max-width: 780px;
+
+        a {
+            color: @primary;
+            text-decoration: underline;
+        }
+    }
+
+    &__empty {
+        background: @bgBoxContent;
+        border: 1px dashed @borderColor;
+        .radius;
+        padding: 40px;
+        text-align: center;
+        color: lighten(@colorFont, 20%);
+    }
+}
+
+// Badge exibida na topbar do editor quando o que está aberto é um modelo, e não
+// uma página real (fica junto do título, ver admin/pages/editor/index.php).
+.badge--modelo {
+    background: lighten(@primary, 52%);
+    color: darken(@primary, 5%);
+}

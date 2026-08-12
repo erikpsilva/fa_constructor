@@ -22,7 +22,6 @@ if (empty($_SESSION['usuario']) || $_SESSION['usuario']['nivel_acesso'] !== 'adm
 $id          = (int) ($_POST['id']          ?? 0);
 $title       = trim($_POST['title']         ?? '');
 $slug        = trim($_POST['slug']          ?? '');
-$template_id = (int) ($_POST['template_id'] ?? 0);
 $status      = trim($_POST['status']        ?? 'draft');
 $is_home     = isset($_POST['is_home']) && $_POST['is_home'] === '1' ? 1 : 0;
 
@@ -77,11 +76,13 @@ if ($is_home) {
     }
 }
 
-$stmt = $pdo->prepare("UPDATE pages SET title = ?, slug = ?, template_id = ?, status = ?, is_home = ? WHERE id = ?");
+// `template_id` (arquivo de layout em templates/) não é mais escolhido pelo usuário —
+// a tela usa Modelo para o conteúdo inicial. A coluna fica de fora do UPDATE para não
+// apagar o valor de páginas antigas; o Router já cai no template 'default' quando é nulo.
+$stmt = $pdo->prepare("UPDATE pages SET title = ?, slug = ?, status = ?, is_home = ? WHERE id = ?");
 $stmt->execute([
     $title,
     $slug,
-    $template_id ?: null,
     $status,
     $is_home,
     $id

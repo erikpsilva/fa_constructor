@@ -20,6 +20,7 @@ $version = time();
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, user-scalable=no">
     <link rel="stylesheet" href="<?= BASE_URL ?>/styles/style.min.css?v=<?= $version ?>">
+    <?= fontAwesomeTag() ?>
     <style>body { margin: 0; }</style>
 </head>
 <body>

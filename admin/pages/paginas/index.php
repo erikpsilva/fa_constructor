@@ -6,14 +6,15 @@ if ($_SESSION['usuario']['nivel_acesso'] !== 'admin') {
 }
 
 require_once ROOT . '/core/Database.php';
-$paginas   = Database::fetchAll(
-    "SELECT p.*, t.name AS template_name
-     FROM pages p
-     LEFT JOIN templates t ON p.template_id = t.id
-     WHERE p.type = 'page'
-     ORDER BY p.is_home DESC, p.created_at DESC"
+$paginas = Database::fetchAll(
+    "SELECT * FROM pages WHERE type = 'page' ORDER BY is_home DESC, created_at DESC"
 );
-$templates = Database::fetchAll("SELECT id, name FROM templates ORDER BY name ASC");
+
+// Modelos de página salvos pelo usuário (pages.type = 'template') — usados como
+// ponto de partida do conteúdo ao criar uma página nova.
+$modelos = Database::fetchAll(
+    "SELECT id, title FROM pages WHERE type = 'template' ORDER BY title ASC"
+);
 ?>
 <!DOCTYPE html>
 <html>
@@ -51,7 +52,6 @@ $templates = Database::fetchAll("SELECT id, name FROM templates ORDER BY name AS
                             <tr>
                                 <th>Nome</th>
                                 <th>Slug</th>
-                                <th>Template</th>
                                 <th>Status</th>
                                 <th>Inicial</th>
                                 <th>Ações</th>
@@ -62,7 +62,6 @@ $templates = Database::fetchAll("SELECT id, name FROM templates ORDER BY name AS
                             <tr>
                                 <td><?= htmlspecialchars($p['title']) ?></td>
                                 <td><code>/<?= htmlspecialchars($p['slug']) ?></code></td>
-                                <td><?= htmlspecialchars($p['template_name'] ?? '—') ?></td>
                                 <td>
                                     <span class="badge badge--status-<?= $p['status'] ?>">
                                         <?= $p['status'] === 'published' ? 'Publicada' : 'Rascunho' ?>
@@ -95,7 +94,6 @@ $templates = Database::fetchAll("SELECT id, name FROM templates ORDER BY name AS
                                         data-id="<?= $p['id'] ?>"
                                         data-title="<?= htmlspecialchars($p['title']) ?>"
                                         data-slug="<?= htmlspecialchars($p['slug']) ?>"
-                                        data-template="<?= (int)$p['template_id'] ?>"
                                         data-status="<?= $p['status'] ?>"
                                         data-is-home="<?= $p['is_home'] ?>">
                                         Configurações
@@ -143,15 +141,18 @@ $templates = Database::fetchAll("SELECT id, name FROM templates ORDER BY name AS
                             <span class="errorText">O slug é obrigatório</span>
                         </div>
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-md-6" id="paginaModeloWrap">
                         <div class="formGroup__item">
-                            <label>Template</label>
-                            <select class="input" id="paginaTemplate">
-                                <option value="">— Sem template —</option>
-                                <?php foreach ($templates as $t): ?>
-                                    <option value="<?= $t['id'] ?>"><?= htmlspecialchars($t['name']) ?></option>
+                            <label>Modelo</label>
+                            <select class="input" id="paginaModelo">
+                                <option value="">— Página em branco —</option>
+                                <?php foreach ($modelos as $m): ?>
+                                    <option value="<?= (int) $m['id'] ?>"><?= htmlspecialchars($m['title']) ?></option>
                                 <?php endforeach; ?>
                             </select>
+                            <small class="formGroup__hint">
+                                Copia o conteúdo do modelo para a nova página.
+                            </small>
                         </div>
                     </div>
                     <div class="col-md-6">

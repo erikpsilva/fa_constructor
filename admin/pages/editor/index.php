@@ -66,6 +66,7 @@ $allPages = Database::fetchAll(
     <link rel="icon" href="<?= ADMIN_BASE_URL ?>/images/favicon.png" type="image/x-icon" />
     <link rel="stylesheet" href="https://cdn.quilljs.com/1.3.7/quill.snow.css">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;900&display=swap">
+    <?= fontAwesomeTag() ?>
     <?php
     $version = time();
     echo '<link rel="stylesheet" href="' . ADMIN_BASE_URL . '/styles/style.min.css?v=' . $version . '">';
@@ -77,20 +78,30 @@ $allPages = Database::fetchAll(
 
     <!-- Top bar -->
     <?php
+    $pageType  = $page['type'] ?? 'page';
     $backUrl   = BASE_URL . '/admin/paginas';
     $backLabel = '← Páginas';
-    if (($page['type'] ?? 'page') !== 'page') {
+    if ($pageType === 'header' || $pageType === 'footer') {
         $backUrl   = BASE_URL . '/admin/header-footer';
         $backLabel = '← Topo e Rodapé';
+    } elseif ($pageType === 'template') {
+        $backUrl   = BASE_URL . '/admin/modelos';
+        $backLabel = '← Modelos';
     }
     ?>
     <div class="pageEditor__topbar">
         <div class="pageEditor__topbar-left">
             <a href="<?= $backUrl ?>" class="btn btn--sm btn--secondary"><?= $backLabel ?></a>
             <span class="pageEditor__topbar-title"><?= htmlspecialchars($page['title']) ?></span>
+            <?php if ($pageType === 'template'): ?>
+                <span class="badge badge--modelo">Modelo</span>
+            <?php endif; ?>
         </div>
         <div class="pageEditor__topbar-right">
             <span id="saveIndicator"></span>
+            <?php if ($pageType === 'page'): ?>
+                <button class="btn btn--sm btn--gray" id="btnSalvarComoModelo">Salvar como modelo</button>
+            <?php endif; ?>
         </div>
     </div>
 
@@ -128,6 +139,33 @@ $allPages = Database::fetchAll(
     </div>
 </div>
 
+<?php if ($pageType === 'page'): ?>
+<!-- Modal: salvar a página atual como modelo reutilizável -->
+<div class="modal" id="modalSalvarModelo">
+    <div class="modal__box modal__box--sm">
+        <div class="modal__header">
+            <h3>Salvar como modelo</h3>
+            <button class="modal__close" id="fecharModalSalvarModelo">&times;</button>
+        </div>
+        <div class="modal__body">
+            <p class="modalSalvarModelo__hint">
+                Salva uma cópia do conteúdo desta página como modelo. Ele fica disponível ao criar uma
+                página nova e pode ser editado depois sem afetar esta página.
+            </p>
+            <div class="formGroup__item">
+                <label>Nome do modelo</label>
+                <input class="input" type="text" id="modeloNome" placeholder="Ex: Landing page de campanha" />
+                <span class="errorText">O nome é obrigatório</span>
+            </div>
+        </div>
+        <div class="modal__footer">
+            <button class="btn btn--secondary" id="cancelarSalvarModelo">Cancelar</button>
+            <button class="btn btn--success" id="confirmarSalvarModelo">Salvar modelo</button>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+
 <script type="text/javascript" src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
 <script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
 <?php echo '<script src="' . ADMIN_BASE_URL . '/scripts/plugins/slick.js?v=' . $version . '"></script>'; ?>
@@ -138,7 +176,13 @@ $allPages = Database::fetchAll(
     var PAGE_DATA      = <?= json_encode(array_values($sections)) ?>;
     var ALL_PAGES      = <?= json_encode(array_values($allPages)) ?>;
 </script>
-<?php echo '<script src="' . ADMIN_BASE_URL . '/pages/editor/editor.js?v=' . $version . '"></script>'; ?>
+<?php
+// Lista de ícones do Font Awesome Free usada pelo seletor do plugin de ícone.
+// Fica num arquivo só dele (≈35KB) para não inflar o editor.js.
+echo '<script src="' . ADMIN_BASE_URL . '/pages/editor/fa-icons.js?v=' . $version . '"></script>';
+echo '<script src="' . ADMIN_BASE_URL . '/pages/editor/fa-icons-pt.js?v=' . $version . '"></script>';
+echo '<script src="' . ADMIN_BASE_URL . '/pages/editor/editor.js?v=' . $version . '"></script>';
+?>
 
 </body>
 </html>

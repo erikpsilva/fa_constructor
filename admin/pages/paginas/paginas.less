@@ -56,6 +56,17 @@
     pointer-events: none;
 }
 
+// ── Texto de apoio abaixo de um campo ─────────────────────────
+.formGroup__hint {
+    color: lighten(@colorFont, 25%);
+    display: block;
+    font-size: 13px;
+    line-height: 1.4;
+    // Sobe o texto para dentro do margin-bottom de 20px do campo (.formGroup__item),
+    // senão ele fica solto no meio do vão entre um campo e o próximo.
+    margin: -14px 0 20px;
+}
+
 // ── Checkbox personalizado ────────────────────────────────────
 .formGroup__item--check {
     display: flex;

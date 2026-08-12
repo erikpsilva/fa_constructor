@@ -50,6 +50,12 @@
                     P&aacute;ginas
                 </a>
             </li>
+            <li class="sidebar__item">
+                <a href="<?= BASE_URL ?>/admin/modelos"
+                   class="sidebar__link <?= ($subRoute === 'modelos') ? 'sidebar__link--active' : '' ?>">
+                    Modelos
+                </a>
+            </li>
             <?php endif; ?>
 
         </ul>

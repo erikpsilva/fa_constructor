@@ -16,6 +16,11 @@ unset($_host, $_scheme);
 
 define('ADMIN_BASE_URL', BASE_URL . '/admin');
 
+// Font Awesome 7 Free (usado pelo plugin de ícone). Versão fixada de propósito:
+// deixar em "@7" pegaria releases novas sem aviso. Ver fontAwesomeTag() em
+// core/Helpers.php para usar um kit da conta em vez deste CDN.
+define('FONTAWESOME_CDN', 'https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@7.3.1/css/all.min.css');
+
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }

@@ -4,6 +4,9 @@ $(document).ready(function () {
     $('#btnNovaPagina').on('click', function () {
         resetModalPagina();
         $('#modalPaginaTitulo').text('Nova Página');
+        // Modelo só faz sentido ao criar: numa página que já existe, aplicar um modelo
+        // significaria sobrescrever/duplicar o conteúdo atual.
+        $('#paginaModeloWrap').show();
         abrirModal('#modalPagina');
     });
 
@@ -12,10 +15,10 @@ $(document).ready(function () {
         const btn = $(this);
         resetModalPagina();
         $('#modalPaginaTitulo').text('Editar Página');
+        $('#paginaModeloWrap').hide();
         $('#paginaId').val(btn.data('id'));
         $('#paginaTitle').val(btn.data('title'));
         $('#paginaSlug').val(btn.data('slug'));
-        $('#paginaTemplate').val(btn.data('template'));
         $('#paginaStatus').val(btn.data('status'));
         $('#paginaIsHome').prop('checked', btn.data('is-home') == 1);
         abrirModal('#modalPagina');
@@ -51,12 +54,13 @@ $(document).ready(function () {
         $('#confirmarModalPagina').prop('disabled', true).text('Salvando...');
 
         $.post(url, {
-            id:          id,
-            title:       title,
-            slug:        slug,
-            template_id: $('#paginaTemplate').val(),
-            status:      $('#paginaStatus').val(),
-            is_home:     isHome
+            id:      id,
+            title:   title,
+            slug:    slug,
+            status:  $('#paginaStatus').val(),
+            is_home: isHome,
+            // Ignorado pelo update_page.php — só o create usa.
+            source_template_id: id ? '' : $('#paginaModelo').val()
         })
         .done(function (res) {
             if (res.success) {
@@ -117,9 +121,9 @@ $(document).ready(function () {
         $('#paginaId').val('');
         $('#paginaTitle').val('');
         $('#paginaSlug').val('');
-        $('#paginaTemplate').val('');
         $('#paginaStatus').val('draft');
         $('#paginaIsHome').prop('checked', false);
+        $('#paginaModelo').val('');
         limparErros('#modalPagina');
     }
 
